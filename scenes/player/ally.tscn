@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://c0nf80v15rey6"]
+
+[ext_resource type="Script" uid="uid://cpji8ta2hrh86" path="res://scenes/player/ally.gd" id="1_ttqwp"]
+[ext_resource type="Texture2D" uid="uid://ckkxx3xj1op1u" path="res://assets/characters/Gobelin.png" id="2_p4fys"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_iemsi"]
+
+[node name="Ally" type="CharacterBody2D" unique_id=1984822545]
+script = ExtResource("1_ttqwp")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=965869634]
+shape = SubResource("RectangleShape2D_iemsi")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=130216653]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_p4fys")
+offset = Vector2(0, 16)
+hframes = 3
+vframes = 4

@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://c3q8ntjwmvour"]
+
+[ext_resource type="Script" uid="uid://b1d2ywh5hbe8i" path="res://scenes/player/player.gd" id="1_3vyb7"]
+[ext_resource type="Texture2D" uid="uid://ckkxx3xj1op1u" path="res://assets/characters/Gobelin.png" id="2_dovo2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g2els"]
+
+[node name="Player" type="CharacterBody2D" unique_id=411621591 groups=["player"]]
+y_sort_enabled = true
+script = ExtResource("1_3vyb7")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=90062020]
+shape = SubResource("RectangleShape2D_g2els")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1089250540]
+position = Vector2(-28.5, -17.916672)
+scale = Vector2(1.3653846, 1.2239584)
+texture = ExtResource("2_dovo2")
+offset = Vector2(0, 16)
+hframes = 3
+vframes = 4
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1177722356]

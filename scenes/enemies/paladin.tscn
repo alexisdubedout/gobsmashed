@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://dp1pv45cyi3sr"]
+
+[ext_resource type="PackedScene" uid="uid://d3uviqoc440oo" path="res://scenes/enemies/enemy.tscn" id="1_pdusb"]
+[ext_resource type="Script" uid="uid://dn0f84g5m3bhh" path="res://scenes/enemies/paladin.gd" id="2_hlhs5"]
+[ext_resource type="Texture2D" uid="uid://jjhcgxb7jf36" path="res://assets/characters/Paladin.png" id="3_7ktas"]
+
+[node name="Paladin" unique_id=1329572204 instance=ExtResource("1_pdusb")]
+script = ExtResource("2_hlhs5")
+
+[node name="Sprite2D" parent="." index="1" unique_id=2144938249]
+texture = ExtResource("3_7ktas")
+hframes = 8

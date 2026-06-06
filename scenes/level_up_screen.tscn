@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://b6r77efwf6846"]
+
+[ext_resource type="Script" uid="uid://dv6prklckgfyh" path="res://scenes/level_up_screen.gd" id="1_tujht"]
+
+[node name="LevelUpScreen" type="CanvasLayer" unique_id=1516533052]
+process_mode = 3
+script = ExtResource("1_tujht")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=720882305]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(1, 1, 1, 0)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1615480837]
+offset_right = 1280.0
+offset_bottom = 720.0
+
+[node name="Titre" type="Label" parent="CenterContainer" unique_id=1967197356]
+layout_mode = 2
+text = "⚔️ LEVEL UP — Choisissez votre augment"
+
+[node name="Cartes" type="HBoxContainer" parent="CenterContainer" unique_id=1055831122]
+layout_mode = 2

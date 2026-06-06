@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://c6qalfs3pime3"]
+
+[ext_resource type="Script" uid="uid://b2mwwhcc0tuvw" path="res://scenes/projectiles/coin.gd" id="1_rwqht"]
+[ext_resource type="Texture2D" uid="uid://b8xfea2ijevsh" path="res://assets/projectiles/Gold coin.png" id="2_i64fm"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_kahox"]
+radius = 8.0
+
+[node name="Coin" type="Area2D" unique_id=546333696]
+collision_layer = 2
+script = ExtResource("1_rwqht")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=589174177]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.9372549, 0.62352943, 0.15294118, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1075482658]
+shape = SubResource("CircleShape2D_kahox")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1065887081]
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("2_i64fm")
+hframes = 8

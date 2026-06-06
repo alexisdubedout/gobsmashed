@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://dav6imbir1r3h"]
+
+[ext_resource type="Script" uid="uid://qm2paq5ru6e5" path="res://scenes/effects/trap.gd" id="1_npg1n"]
+[ext_resource type="Texture2D" uid="uid://dlc3m6fy0ftbo" path="res://assets/effects/trap/Calque 1.png" id="2_2yn2y"]
+[ext_resource type="Texture2D" uid="uid://b37oqgpwm2mpr" path="res://assets/effects/trap/Calque 2.png" id="3_attbb"]
+[ext_resource type="Texture2D" uid="uid://neg1vvv7jl7g" path="res://assets/effects/trap/Calque 3.png" id="4_yukk1"]
+[ext_resource type="Texture2D" uid="uid://cya821g5c0s8y" path="res://assets/effects/trap/Calque 5.png" id="5_hlj1c"]
+[ext_resource type="Texture2D" uid="uid://1bgh8jpmm4e3" path="res://assets/effects/trap/Calque 6.png" id="6_2sjfg"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_62q8x"]
+size = Vector2(40, 40)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_6vigr"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_2yn2y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_attbb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_yukk1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_2sjfg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_hlj1c")
+}],
+"loop": false,
+"name": &"default",
+"speed": 12.0
+}]
+
+[node name="Trap" type="Area2D" unique_id=739644609]
+script = ExtResource("1_npg1n")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1930375972]
+shape = SubResource("RectangleShape2D_62q8x")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1531572387]
+scale = Vector2(0.4, 0.4)
+sprite_frames = SubResource("SpriteFrames_6vigr")
+frame = 3
+frame_progress = 1.0

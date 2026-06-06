@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://bk2dc7dwl3wxs"]
+
+[ext_resource type="Script" uid="uid://blh1andvil5i3" path="res://scenes/effects/poison_pool.gd" id="1_dcl3o"]
+[ext_resource type="Texture2D" uid="uid://1b4puxsqqnkj" path="res://assets/effects/poison.png" id="2_b0bwc"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_b0bwc"]
+radius = 40.0
+
+[node name="PoisonPool" type="Area2D" unique_id=2133541541]
+script = ExtResource("1_dcl3o")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2040864522]
+shape = SubResource("CircleShape2D_b0bwc")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=331575541]
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("2_b0bwc")
+hframes = 3
+vframes = 3
