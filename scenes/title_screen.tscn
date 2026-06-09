@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://bm24pndvh0cxv"]
+
+[ext_resource type="Script" uid="uid://c2nvdcxhsdmuq" path="res://scenes/title_screen.gd" id="1_fgkus"]
+[ext_resource type="Texture2D" uid="uid://mkri8hrvy35w" path="res://assets/ui/title_bg.jpg" id="2_sa3yf"]
+
+[node name="TitleScreen" type="Control" unique_id=473586583]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 315.0
+offset_bottom = 554.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_fgkus")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1212716916]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -312.0
+offset_bottom = -549.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_sa3yf")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Button" type="Button" parent="." unique_id=1649423318]
+layout_mode = 0
+offset_left = 61.0
+offset_top = 637.0
+offset_right = 188.0
+offset_bottom = 689.0
+flat = true
+
+[node name="Button2" type="Button" parent="." unique_id=1147193570]
+layout_mode = 0
+offset_left = 230.0
+offset_top = 649.0
+offset_right = 351.0
+offset_bottom = 685.0
+flat = true
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Button2" to="." method="_on_button_donjon_pressed"]

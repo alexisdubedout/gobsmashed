@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b180q5rrhnaj6"]
 
-[ext_resource type="PackedScene" uid="uid://d3uviqoc440oo" path="res://scenes/enemies/enemy.tscn" id="1_0gpyn"]
+[ext_resource type="PackedScene" uid="uid://d3uviqoc440oo" path="res://scenes/enemies/guerrier.tscn" id="1_0gpyn"]
 [ext_resource type="Script" uid="uid://baxwkoybayjkx" path="res://scenes/enemies/mage.gd" id="2_nwq87"]
 [ext_resource type="Texture2D" uid="uid://bu4s10y50630o" path="res://assets/characters/Mage.png" id="3_2fngf"]
 
@@ -9,4 +9,3 @@ script = ExtResource("2_nwq87")
 
 [node name="Sprite2D" parent="." index="1" unique_id=2144938249]
 texture = ExtResource("3_2fngf")
-hframes = 8

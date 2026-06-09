@@ -6,12 +6,13 @@ var shoot_delay = 2.0
 var preferred_distance = 250.0
 
 func setup():
-	max_hp = 20
-	current_hp = 20
-	speed = 70.0
-	base_speed = 70.0
+	max_hp = 25
+	current_hp = 25
+	speed = 115
+	base_speed = 115
 	damage = 8
-	xp_value = 2
+	shoot_delay = 1.8
+	xp_value = 4
 	anim_frames_count = 8
 
 func get_direction() -> Vector2:

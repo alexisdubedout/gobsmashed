@@ -12,8 +12,11 @@ offset_bottom = 720.0
 color = Color(1, 1, 1, 0)
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=1615480837]
-offset_right = 1280.0
-offset_bottom = 720.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Titre" type="Label" parent="CenterContainer" unique_id=1967197356]
 layout_mode = 2

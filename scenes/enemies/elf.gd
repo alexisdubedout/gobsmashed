@@ -1,12 +1,12 @@
 extends BaseEnemy
 
 func setup():
-	max_hp = 15
-	current_hp = 15
-	speed = 160.0
-	base_speed = 160.0
-	damage = 5
-	xp_value = 1
+	max_hp = 20
+	current_hp = 20
+	speed = 180.0
+	base_speed = 180.0
+	damage = 6
+	xp_value = 2
 	anim_frames_count = 8
 
 func get_direction() -> Vector2:

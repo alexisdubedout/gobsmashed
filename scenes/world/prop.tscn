@@ -9,7 +9,7 @@ size = Vector2(80, 40)
 y_sort_enabled = true
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1795250096]
-scale = Vector2(0.6, 0.6)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("1_oqdb8")
 hframes = 10
 vframes = 10

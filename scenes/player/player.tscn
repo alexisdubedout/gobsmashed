@@ -21,3 +21,4 @@ hframes = 3
 vframes = 4
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1177722356]
+zoom = Vector2(0.75, 0.75)

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://tlnxxydopmw0"]
 
-[ext_resource type="PackedScene" uid="uid://d3uviqoc440oo" path="res://scenes/enemies/enemy.tscn" id="1_kn2t1"]
+[ext_resource type="PackedScene" uid="uid://d3uviqoc440oo" path="res://scenes/enemies/guerrier.tscn" id="1_kn2t1"]
 [ext_resource type="Script" uid="uid://bwdlgovo2hvgd" path="res://scenes/enemies/elf.gd" id="2_h7iw8"]
 [ext_resource type="Texture2D" uid="uid://ba1saen3agluf" path="res://assets/characters/Elf.png" id="3_1ajeq"]
 

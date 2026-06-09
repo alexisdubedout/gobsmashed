@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://bvnpi7q26swy3"]
+
+[ext_resource type="Texture2D" uid="uid://c8k7w8tdmln0y" path="res://assets/tileset/2D Isometric Village Asset Pack/Isometric Assets 2.png" id="1_6ptwk"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_50cyl"]
+size = Vector2(80, 40)
+
+[node name="Tresor" type="StaticBody2D" unique_id=1144407147]
+y_sort_enabled = true
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1795250096]
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("1_6ptwk")
+hframes = 10
+vframes = 10
+frame = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1907543247]
+shape = SubResource("RectangleShape2D_50cyl")

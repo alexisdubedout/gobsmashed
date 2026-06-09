@@ -1,35 +1,74 @@
-extends Area2D
+extends Node2D
 
-const ROOT_DURATION = 3.0
-var triggered = false
-var triggered_enemies = []
+const ENEMIES = {
+	"guerrier": preload("res://scenes/enemies/guerrier.tscn"),
+	"paladin": preload("res://scenes/enemies/paladin.tscn"),
+	"elf": preload("res://scenes/enemies/elf.tscn"),
+	"mage": preload("res://scenes/enemies/mage.tscn"),
+}
+
+# Définition des vagues
+# Chaque vague : durée en secondes + quels ennemis spawner
+const WAVES = [
+	{"duree": 30, "ennemis": ["guerrier"], "spawn_delay": 2.0},
+	{"duree": 40, "ennemis": ["guerrier", "elf"], "spawn_delay": 1.5},
+	{"duree": 40, "ennemis": ["guerrier", "elf", "paladin"], "spawn_delay": 1.3},
+	{"duree": 50, "ennemis": ["guerrier", "elf", "paladin", "mage"], "spawn_delay": 1.0},
+	{"duree": 50, "ennemis": ["paladin", "mage", "elf"], "spawn_delay": 0.8},
+	{"duree": 60, "ennemis": ["guerrier", "paladin", "mage", "elf"], "spawn_delay": 0.6},
+]
+
+var current_wave = 0
+var wave_timer = 0.0
+var spawn_timer = 0.0
+var spawn_radius = 400.0
+var player
+var wave_active = true
 
 func _ready():
-	# Frame 1 — piège ouvert, en attente
-	$AnimatedSprite2D.stop()
-	$AnimatedSprite2D.frame = 0
-	
-	# Quand l'animation est finie → disparaît après un délai
-	$AnimatedSprite2D.animation_finished.connect(_on_animation_finished)
+	player = get_tree().get_first_node_in_group("player")
+	afficher_vague()
 
-func _process(_delta):
-	if triggered:
+func _process(delta):
+	if not player or not wave_active:
 		return
-	var enemies = get_tree().get_nodes_in_group("enemy")
-	for enemy in enemies:
-		var dist = global_position.distance_to(enemy.global_position)
-		if dist < 30.0 and enemy not in triggered_enemies:
-			triggered = true
-			triggered_enemies.append(enemy)
-			# Lance l'animation de fermeture
-			$AnimatedSprite2D.play("default")
-			# Root l'ennemi
-			enemy.rooted = true
-			await get_tree().create_timer(ROOT_DURATION).timeout
-			if is_instance_valid(enemy):
-				enemy.rooted = false
+	
+	# Timer de la vague
+	wave_timer += delta
+	var vague = WAVES[current_wave]
+	
+	# Spawn continu pendant la vague
+	spawn_timer += delta
+	if spawn_timer >= vague["spawn_delay"]:
+		spawn_timer = 0.0
+		spawn_enemy(vague["ennemis"])
+	
+	# Fin de vague
+	if wave_timer >= vague["duree"]:
+		wave_timer = 0.0
+		next_wave()
 
-func _on_animation_finished():
-	# Attend 1 seconde puis disparaît
-	await get_tree().create_timer(1.0).timeout
-	queue_free()
+func spawn_enemy(pool: Array):
+	var angle = randf() * TAU
+	var offset = Vector2(cos(angle), sin(angle)) * spawn_radius
+	var type = pool[randi() % pool.size()]
+	var enemy = ENEMIES[type].instantiate()
+	enemy.global_position = player.global_position + offset
+	get_parent().add_child(enemy)
+
+func next_wave():
+	current_wave += 1
+	
+	# Toutes les vagues terminées → BOSS
+	if current_wave >= WAVES.size():
+		wave_active = false
+		print("BOSS !")
+		# On déclenchera le boss ici plus tard
+		return
+	
+	# Moment de répit — on vide les ennemis restants
+	afficher_vague()
+
+func afficher_vague():
+	print("=== VAGUE ", current_wave + 1, " / ", WAVES.size(), " ===")
+	# On mettra à jour le HUD ici

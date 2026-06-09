@@ -1,49 +1,67 @@
 extends Node2D
 
-const ENEMIES = [
-	preload("res://scenes/enemies/paladin.tscn"),
-	preload("res://scenes/enemies/elf.tscn"),
-	preload("res://scenes/enemies/mage.tscn"),
-	preload("res://scenes/enemies/enemy.tscn"),
+const ENEMIES = {
+	"guerrier": preload("res://scenes/enemies/guerrier.tscn"),
+	"paladin": preload("res://scenes/enemies/paladin.tscn"),
+	"elf": preload("res://scenes/enemies/elf.tscn"),
+	"mage": preload("res://scenes/enemies/mage.tscn"),
+	}
+
+
+const WAVES = [
+	{"duree": 25, "ennemis": ["guerrier"], "spawn_delay": 2.5},
+	{"duree": 30, "ennemis": ["guerrier", "elf"], "spawn_delay": 2.0},
+	{"duree": 35, "ennemis": ["guerrier", "elf", "paladin"], "spawn_delay": 1.5},
+	{"duree": 40, "ennemis": ["paladin", "mage"], "spawn_delay": 1.1},
+	{"duree": 45, "ennemis": ["paladin", "mage", "elf"], "spawn_delay": 0.8},
+	{"duree": 60, "ennemis": ["guerrier", "paladin", "mage", "elf"], "spawn_delay": 0.5},
 ]
 
-var spawn_delay = 2.0
-var enemy_speed = 80.0
-var min_spawn_delay = 0.3
-var max_enemy_speed = 220.0
-var difficulty_interval = 15.0
-var player
+var current_wave = 0
+var wave_timer = 0.0
 var spawn_timer = 0.0
-var difficulty_timer = 0.0
-var spawn_radius = 400.0
+var spawn_radius = 600.0
+var player
+var wave_active = true
 
 func _ready():
 	player = get_tree().get_first_node_in_group("player")
+	afficher_vague()
 
 func _process(delta):
-	if not player:
+	if not player or not wave_active:
 		return
+	
+	wave_timer += delta
+	var vague = WAVES[current_wave]
+	
 	spawn_timer += delta
-	if spawn_timer >= spawn_delay:
+	if spawn_timer >= vague["spawn_delay"]:
 		spawn_timer = 0.0
-		spawn_enemy()
-	difficulty_timer += delta
-	if difficulty_timer >= difficulty_interval:
-		difficulty_timer = 0.0
-		increase_difficulty()
+		spawn_enemy(vague["ennemis"])
+	
+	if wave_timer >= vague["duree"]:
+		wave_timer = 0.0
+		next_wave()
 
-func spawn_enemy():
+func spawn_enemy(pool: Array):
 	var angle = randf() * TAU
 	var offset = Vector2(cos(angle), sin(angle)) * spawn_radius
-	var scene = ENEMIES[randi() % ENEMIES.size()]
-	print("Spawn : ", scene.resource_path)
-	var enemy = scene.instantiate()
+	var type = pool[randi() % pool.size()]
+	var enemy = ENEMIES[type].instantiate()
 	enemy.global_position = player.global_position + offset
-	enemy.speed = enemy_speed
-	enemy.base_speed = enemy_speed
 	get_parent().add_child(enemy)
 
-func increase_difficulty():
-	spawn_delay = max(min_spawn_delay, spawn_delay - 0.2)
-	enemy_speed = min(max_enemy_speed, enemy_speed + 15.0)
-	print("Difficulté ! Spawn: ", spawn_delay, "s | Vitesse: ", enemy_speed)
+func next_wave():
+	current_wave += 1
+	if current_wave >= WAVES.size():
+		wave_active = false
+		print("BOSS !")
+		return
+	afficher_vague()
+
+func afficher_vague():
+	print("=== VAGUE ", current_wave + 1, " / ", WAVES.size(), " ===")
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud:
+		hud.update_wave(current_wave + 1, WAVES.size())

@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://d3uviqoc440oo"]
+
+[ext_resource type="Script" uid="uid://0y5yjj15f4by" path="res://scenes/enemies/guerrier.gd" id="1_2sbji"]
+[ext_resource type="Texture2D" uid="uid://b7c3wsrw2q3dy" path="res://assets/characters/Guerrier.png" id="2_8gn2y"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_8e3ao"]
+size = Vector2(32, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6xk8f"]
+size = Vector2(32, 32)
+
+[node name="Enemy" type="CharacterBody2D" unique_id=1329572204 groups=["enemy"]]
+y_sort_enabled = true
+collision_mask = 3
+script = ExtResource("1_2sbji")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1593108331]
+shape = SubResource("RectangleShape2D_8e3ao")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=2144938249]
+texture = ExtResource("2_8gn2y")
+hframes = 8
+vframes = 4
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1691463005]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=1383828229]
+shape = SubResource("RectangleShape2D_6xk8f")

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cstk4j62q4lk8"]
+
+[ext_resource type="Script" uid="uid://b66r6ovbe3bxf" path="res://scenes/donjon.gd" id="1_231ca"]
+
+[node name="CanvasLayer" type="CanvasLayer" unique_id=334884030]
+script = ExtResource("1_231ca")

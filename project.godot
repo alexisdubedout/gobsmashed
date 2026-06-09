@@ -11,16 +11,22 @@ config_version=5
 [application]
 
 config/name="Gobsmashed"
-run/main_scene="uid://cjqw4mx1bn5he"
+run/main_scene="uid://bm24pndvh0cxv"
 config/features=PackedStringArray("4.6", "GL Compatibility")
-config/icon="res://icon.svg"
+
+[autoload]
+
+AudioManager="*uid://bujiv4jgp77s5"
+Sons="*uid://ifyelwqgythb"
+GameState="*uid://lhb3wah1n8dg"
 
 [display]
 
-window/size/viewport_width=1280
+window/size/viewport_width=405
 window/size/viewport_height=720
+window/size/borderless=true
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/handheld/orientation=1
 
 [input]
 
