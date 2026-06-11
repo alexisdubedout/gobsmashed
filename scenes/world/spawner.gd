@@ -5,7 +5,9 @@ const ENEMIES = {
 	"paladin": preload("res://scenes/enemies/paladin.tscn"),
 	"elf": preload("res://scenes/enemies/elf.tscn"),
 	"mage": preload("res://scenes/enemies/mage.tscn"),
-	}
+}
+const BOSS_SCENE = preload("res://scenes/enemies/boss.tscn")
+const BOSS_TYPES = ["guerrier", "paladin", "elf", "mage"]
 
 
 const WAVES = [
@@ -101,7 +103,8 @@ func next_wave():
 	current_wave += 1
 	if current_wave >= WAVES.size():
 		wave_active = false
-		print("BOSS !")
+		_vider_ennemis()
+		_spawner_boss()
 		return
 	afficher_vague()
 
@@ -122,6 +125,21 @@ func _tourelle_tirer():
 	coin.direction = dir
 	coin.damage = int(10 * GameState.get_degats_bonus())
 	get_tree().current_scene.add_child(coin)
+
+func _vider_ennemis():
+	for e in get_tree().get_nodes_in_group("enemy"):
+		e.queue_free()
+
+func _spawner_boss():
+	var type = BOSS_TYPES[randi() % BOSS_TYPES.size()]
+	var boss = BOSS_SCENE.instantiate()
+	boss.setup(type)
+	if player:
+		boss.global_position = player.global_position + Vector2(0, -500)
+	get_parent().add_child(boss)
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud:
+		hud.afficher_annonce_boss(type)
 
 func afficher_vague():
 	print("=== VAGUE ", current_wave + 1, " / ", WAVES.size(), " ===")
