@@ -40,6 +40,17 @@ var trappe_active = false
 var damage_cooldowns = {}
 var damage_cooldown_duration = 0.5
 
+# Dash
+var dash_requested: bool  = false
+var dash_active:    bool  = false
+var dash_timer:     float = 0.0
+var dash_cd:        float = 0.0
+var dash_cd_dur:    float = 1.5
+var dash_dur:       float = 0.22
+var iframe_dur_wave: float = 0.18
+var invincible:     bool  = false
+var last_move_dir:  Vector2 = Vector2.RIGHT
+
 func _ready():
 	level_up_screen = LEVEL_UP_SCENE.instantiate()
 	# Applique les bonus permanents
@@ -47,7 +58,11 @@ func _ready():
 	current_hp = max_hp
 	ATTACK_DELAY = 1.2 / GameState.get_attaque_bonus()
 	# La vitesse et les dégâts sont appliqués dynamiquement
-	
+	match Augments.stacks.get("Dash éclair", 0):
+		1: dash_cd_dur = 1.1; iframe_dur_wave = 0.22
+		2: dash_cd_dur = 0.7; iframe_dur_wave = 0.28; dash_dur = 0.24
+		3: dash_cd_dur = 0.5; iframe_dur_wave = 0.35; dash_dur = 0.28
+
 func _input(event):
 	if event is InputEventScreenTouch:
 		if event.pressed:
@@ -72,6 +87,8 @@ func _physics_process(_delta):
 		if damage_cooldowns[key] <= 0:
 			damage_cooldowns.erase(key)
 
+	dash_cd = max(dash_cd - _delta, 0.0)
+
 	# Déplacement
 	var direction = Vector2.ZERO
 	if Input.is_action_pressed("move_right"):
@@ -84,7 +101,10 @@ func _physics_process(_delta):
 		direction.y -= 1
 		
 	if touch_direction != Vector2.ZERO:
-			direction = touch_direction
+		direction = touch_direction
+
+	if direction != Vector2.ZERO:
+		last_move_dir = direction.normalized()
 
 	# Direction et animation
 	var row = 0
@@ -106,9 +126,22 @@ func _physics_process(_delta):
 
 	$Sprite2D.frame = row * 3 + anim_frame
 
-	if direction != Vector2.ZERO:
-		direction = direction.normalized()
-	velocity = direction * SPEED * GameState.get_vitesse_bonus()
+	if dash_active:
+		dash_timer -= _delta
+		velocity = last_move_dir * 550.0
+		if dash_timer <= 0.0:
+			dash_active = false
+	elif dash_requested and dash_cd <= 0.0:
+		dash_requested = false
+		dash_active = true
+		dash_timer = dash_dur
+		dash_cd = dash_cd_dur
+		velocity = last_move_dir * 550.0
+		_iframe_wave()
+	else:
+		if direction != Vector2.ZERO:
+			direction = direction.normalized()
+		velocity = direction * SPEED * GameState.get_vitesse_bonus()
 	move_and_slide()
 
 	# Flaque de poison
@@ -161,21 +194,33 @@ func fire_coin(target_pos):
 	coin.damage = int(15 * (1.0 + rage_niveau * 0.2) * GameState.get_degats_bonus())
 	get_tree().current_scene.add_child(coin)
 
+func _iframe_wave():
+	invincible = true
+	var t = 0.0
+	while t < iframe_dur_wave:
+		$Sprite2D.modulate = Color(0.3, 0.8, 2.0) if int(t * 20) % 2 == 0 else Color(1, 1, 1)
+		await get_tree().process_frame
+		t += get_process_delta_time()
+	if is_instance_valid(self):
+		$Sprite2D.modulate = Color(1, 1, 1)
+		invincible = false
+
 func take_damage_from(amount: int, source) -> void:
+	if invincible: return
 	var source_id = source.get_instance_id()
 	if source_id in damage_cooldowns:
 		return
 	damage_cooldowns[source_id] = damage_cooldown_duration
 	current_hp -= amount
-	print("PV restants : ", current_hp)
 	if current_hp <= 0:
 		die()
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
+	if invincible: return false
 	current_hp -= amount
-	print("PV restants : ", current_hp)
 	if current_hp <= 0:
 		die()
+	return true
 
 func gagner_xp(montant):
 	xp += montant

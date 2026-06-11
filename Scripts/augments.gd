@@ -10,6 +10,7 @@ const LISTE = [
 	{"nom": "Pièces lourdes", "desc": "Les ennemis ralentissent", "type": "slow", "icone": "💰"},
 	{"nom": "Avarice", "desc": "Chaque kill redonne des PV", "type": "soin", "icone": "💛"},
 	{"nom": "Rage gobeline", "desc": "Les pièces font plus de dégâts", "type": "attaque", "icone": "🔥"},
+	{"nom": "Dash éclair", "desc": "Améliore le dash du boss fight", "type": "mobilité", "icone": "💨"},
 ]
 
 static func reset() -> void:
@@ -60,6 +61,11 @@ static func get_desc(augment: Dictionary) -> String:
 				0: return "+20% dégâts des pièces"
 				1: return "+40% dégâts des pièces"
 				2: return "+60% dégâts + pièces traversent (MAX)"
+		"Dash éclair":
+			match stack:
+				0: return "Cooldown réduit (1.5s → 1.1s)"
+				1: return "I-frames étendus + cooldown 0.7s"
+				2: return "Distance max + cooldown 0.5s (MAX)"
 	return augment["desc"]
 
 static func appliquer(augment: Dictionary, player) -> void:
@@ -92,3 +98,5 @@ static func appliquer(augment: Dictionary, player) -> void:
 			player.rage_niveau = stack
 			if stack == 3:
 				player.coin_pierce = true
+		"Dash éclair":
+			pass  # Lu au démarrage du boss fight par player_platformer._ready()

@@ -46,6 +46,12 @@ const BONUS_STATS = {
 
 const MAX_NIVEAU_STAT = 10
 
+# État transporté vers le combat boss
+var boss_hp_joueur: int = 0
+var boss_type: String = ""
+var boss_kills_run: int = 0
+var boss_temps_run: float = 0.0
+
 func _ready():
 	charger()
 

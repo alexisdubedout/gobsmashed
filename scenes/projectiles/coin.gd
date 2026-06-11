@@ -1,6 +1,6 @@
 extends Area2D
 
-const SPEED = 280.0
+var speed = 280.0
 var damage = 15
 var direction = Vector2.ZERO
 var is_enemy_projectile = false
@@ -8,6 +8,7 @@ var piece_lourde_niveau = 0
 var can_pierce = false
 var can_bounce = false
 var already_hit = []
+var hit_radius = 20.0
 
 var anim_timer = 0.0
 var anim_delay = 0.08
@@ -19,7 +20,7 @@ func _ready():
 		queue_free()
 
 func _physics_process(_delta):
-	global_position += direction * SPEED * _delta
+	global_position += direction * speed * _delta
 
 	anim_timer += _delta
 	if anim_timer >= anim_delay:
@@ -31,8 +32,7 @@ func _physics_process(_delta):
 		var player = get_tree().get_first_node_in_group("player")
 		if player:
 			var dist = global_position.distance_to(player.global_position)
-			if dist < 20.0:
-				player.take_damage(damage)
+			if dist < hit_radius and player.take_damage(damage):
 				queue_free()
 	else:
 		var enemies = get_tree().get_nodes_in_group("enemy")
@@ -40,7 +40,7 @@ func _physics_process(_delta):
 			if enemy in already_hit:
 				continue
 			var dist = global_position.distance_to(enemy.global_position)
-			if dist < 20.0:
+			if dist < hit_radius:
 				enemy.take_damage(damage)
 				if piece_lourde_niveau >= 1:
 					enemy.slowed = true
