@@ -17,7 +17,7 @@ func setup():
 	speed = 85.0
 	base_speed = 85.0
 	damage = 12
-	xp_value = 4
+	xp_value = 6
 	anim_frames_count = 8
 
 func _physics_process(_delta):

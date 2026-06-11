@@ -1,7 +1,7 @@
 extends Area2D
 
 const SPEED = 270.0
-const DAMAGE = 18
+const DAMAGE = 12
 var direction = Vector2.ZERO
 
 func _ready():

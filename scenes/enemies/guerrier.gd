@@ -6,7 +6,7 @@ var current_hp = 40
 var speed = 130.0
 var base_speed = 130.0
 var damage = 8
-var xp_value = 2
+var xp_value = 3
 
 var anim_timer = 0.0
 var anim_delay = 0.1

@@ -14,7 +14,7 @@ const WAVES = [
 	{"duree": 35, "ennemis": ["guerrier", "elf", "paladin"], "spawn_delay": 1.5},
 	{"duree": 40, "ennemis": ["paladin", "mage"], "spawn_delay": 1.1},
 	{"duree": 45, "ennemis": ["paladin", "mage", "elf"], "spawn_delay": 0.8},
-	{"duree": 60, "ennemis": ["guerrier", "paladin", "mage", "elf"], "spawn_delay": 0.5},
+	{"duree": 60, "ennemis": ["guerrier", "paladin", "mage", "elf"], "spawn_delay": 0.8, "spawn_delay_end": 0.4},
 ]
 
 var current_wave = 0
@@ -25,6 +25,7 @@ var player
 var wave_active = true
 
 func _ready():
+	add_to_group("spawner")
 	player = get_tree().get_first_node_in_group("player")
 	afficher_vague()
 
@@ -35,8 +36,12 @@ func _process(delta):
 	wave_timer += delta
 	var vague = WAVES[current_wave]
 	
+	var current_delay = vague["spawn_delay"]
+	if vague.has("spawn_delay_end"):
+		current_delay = lerp(vague["spawn_delay"], vague["spawn_delay_end"], wave_timer / vague["duree"])
+
 	spawn_timer += delta
-	if spawn_timer >= vague["spawn_delay"]:
+	if spawn_timer >= current_delay:
 		spawn_timer = 0.0
 		spawn_enemy(vague["ennemis"])
 	

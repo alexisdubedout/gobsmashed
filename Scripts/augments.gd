@@ -69,10 +69,11 @@ static func appliquer(augment: Dictionary, player) -> void:
 
 	match nom:
 		"Attack speed":
+			var base_delay = 1.2 / GameState.get_attaque_bonus()
 			match stack:
-				1: player.ATTACK_DELAY = max(0.2, player.ATTACK_DELAY * 0.85)
-				2: player.ATTACK_DELAY = max(0.2, player.ATTACK_DELAY * 0.75)
-				3: player.ATTACK_DELAY = max(0.2, player.ATTACK_DELAY * 0.5)
+				1: player.ATTACK_DELAY = max(0.2, base_delay * 0.85)
+				2: player.ATTACK_DELAY = max(0.2, base_delay * 0.75)
+				3: player.ATTACK_DELAY = max(0.2, base_delay * 0.50)
 		"Multi-shot":
 			player.multi_shot += 1
 			if stack == 3:

@@ -6,7 +6,7 @@ func setup():
 	speed = 180.0
 	base_speed = 180.0
 	damage = 6
-	xp_value = 2
+	xp_value = 3
 	anim_frames_count = 8
 
 func get_direction() -> Vector2:

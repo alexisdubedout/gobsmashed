@@ -183,7 +183,7 @@ func gagner_xp(montant):
 		current_hp = min(max_hp, current_hp + avarice_niveau)
 	if xp >= xp_next_level:
 		xp = 0
-		xp_next_level = int(xp_next_level * 1.4)
+		xp_next_level = int(xp_next_level * 1.25)
 		level_up()
 
 

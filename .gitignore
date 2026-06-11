@@ -1,3 +1,10 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Exports web (générés, pas à versionner)
+*.wasm
+*.pck
+*.js
+*.html
+export_presets.cfg
