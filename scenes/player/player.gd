@@ -46,6 +46,8 @@ func _ready():
 	max_hp = 100 + GameState.get_hp_max_bonus()
 	current_hp = max_hp
 	ATTACK_DELAY = 1.2 / GameState.get_attaque_bonus()
+	# Démarre légèrement en bas de la base
+	global_position = Vector2(0, 80)
 	# La vitesse et les dégâts sont appliqués dynamiquement
 	
 func _input(event):
