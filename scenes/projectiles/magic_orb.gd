@@ -17,6 +17,5 @@ func _physics_process(_delta):
 	var player = get_tree().get_first_node_in_group("player")
 	if player:
 		var dist = global_position.distance_to(player.global_position)
-		if dist < 25.0:
-			player.take_damage(DAMAGE)
+		if dist < 25.0 and player.take_damage(DAMAGE):
 			queue_free()

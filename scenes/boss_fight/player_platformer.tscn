@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/boss_fight/player_platformer.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/characters/Gobelin.png" id="2"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
+radius = 11.0
+height = 26.0
+
+[node name="PlayerPlatformer" type="CharacterBody2D" groups=["player"]]
+collision_layer = 8
+collision_mask = 3
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_1")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2")
+hframes = 3
+vframes = 4
