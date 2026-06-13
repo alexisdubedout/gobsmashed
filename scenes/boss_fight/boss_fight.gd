@@ -21,6 +21,12 @@ var dash_btn_bg: ColorRect
 var dash_cd_lbl: Label
 var dash_was_ready: bool = true
 
+# Zones de danger au sol — remplies à la génération d'arène
+var lava_zones_data: Array = []
+var platform_nodes:  Array = []
+var _lava_cd: float = 0.0
+const LAVA_DMG = 9
+
 # ── Profils d'arène par boss ─────────────────────────────────────────────────
 #
 # Chaque marqueur est déduit directement des attaques du boss.
@@ -33,6 +39,8 @@ var dash_was_ready: bool = true
 #   plat_heights       → hauteurs disponibles depuis GROUND_Y (liste, px)
 #   plat_x_zone        → fraction [left, right] de l'arène où poser les plateformes
 #   center_gap         → fraction centrale sans plateforme (0.0 = désactivé)
+#   lava_zones         → liste de zones danger au sol [[frac_debut, frac_fin], ...]
+#   lava_color         → couleur de la lave (Color)
 #
 const BOSS_ARENA_PROFILES = {
 
@@ -52,45 +60,59 @@ const BOSS_ARENA_PROFILES = {
 	},
 
 	# ── GUERRIER ──────────────────────────────────────────────────
-	# Charge  : arène étroite = la charge est impossible à éviter latéralement
-	# Stomp   : projectiles sol + côtés → plateformes nombreuses = joueur coincé sur l'une d'elles
-	# Spin    : radial depuis courte portée → corridor étroit amplifie les hits
-	# → Arène resserrée, plus de plateformes pour créer des pièges de mobilité
+	# Charge      : arène 1200px → charge 680px/s × 0.55s ≈ 370px (30% de l'arène).
+	#               Lisible et décisive. Plateforme à 160px+ = hors portée (hitbox sol).
+	# Stomp       : shockwave check dy > -90 → toute plateforme ≥ 160px est SAFE.
+	#               Message clair : "monte = survie", pas de confusion avec les bas perchoirs.
+	# Spin        : rayon 135px → recul sur plateforme + tir à distance.
+	# Lave bords  : empêche le camping de coin sans bloquer le centre.
+	#               Le centre reste ouvert pour le duel et les esquives au dash.
+	# → Arène compacte, 3-4 plateformes larges et hautes, lave aux extrémités uniquement.
 	"guerrier": {
-		"arena_w_range":    [620.0, 760.0],
-		"plat_count_range": [2, 4],
-		"plat_width_range": [120.0, 190.0],
-		"plat_heights":     [90.0, 140.0, 180.0],
-		"plat_x_zone":      [0.08, 0.92],
+		"arena_w_range":    [1150.0, 1250.0],
+		"plat_count_range": [3, 4],
+		"plat_width_range": [140.0, 200.0],
+		"plat_heights":     [120.0, 160.0],
+		"plat_x_zone":      [0.10, 0.90],
 		"center_gap":       0.0,
+		"lava_zones":       [[0.0, 0.08], [0.92, 1.0]],
+		"lava_color":       Color("#dd2200"),
 	},
 
 	# ── PALADIN ───────────────────────────────────────────────────
-	# Zone    : dégâts de proximité en pulsions → arène moyenne force le joueur proche
-	# Bouclier: tirs ciblés + explosion de sortie → pas d'abri = plein impact
-	# Charge  : lente mais telegraphée — peu d'importance sur la largeur
-	# → Arène médiane, plateformes hautes → joueur grimpe mais reste dans portée zone
+	# Zone    : AoE 180px → joueur ne peut pas s'éloigner indéfiniment
+	#           La lave sur les FLANCS (0–9% et 91–100%) coupe la retraite aux murs
+	#           → Joueur coincé dans une zone "médiane" pile dans la portée de la zone
+	# Bouclier: tirs ciblés depuis n'importe où → plateformes hautes = seul abri partiel
+	# Charge rapide : 600px/s × 0.55s = 330px traversés → avec arène 1150px c'est brutal
+	# → Lave aux deux bords, obligation de garder une distance médiane impossible à tenir
 	"paladin": {
-		"arena_w_range":    [700.0, 860.0],
-		"plat_count_range": [2, 3],
-		"plat_width_range": [100.0, 160.0],
-		"plat_heights":     [90.0, 145.0, 185.0],
+		"arena_w_range":    [1100.0, 1200.0],
+		"plat_count_range": [3, 5],
+		"plat_width_range": [88.0, 132.0],
+		"plat_heights":     [95.0, 145.0, 190.0, 225.0],
 		"plat_x_zone":      [0.08, 0.92],
 		"center_gap":       0.0,
+		"lava_zones":       [[0.0, 0.09], [0.91, 1.0]],
+		"lava_color":       Color("#cc8800"),
 	},
 
 	# ── ELF ───────────────────────────────────────────────────────
-	# Dash    : téléporte côté opposé et tire immédiatement → peu de plateformes = joueur exposé
-	# Salve   : éventail → espace latéral limité amplifie les hits
-	# Pluie   : coins depuis le ciel → peu d'abri = plein impact
-	# → Arène moyenne, peu de cover, plateformes hautes pour rendre l'esquive verticale risquée
+	# Dash    : téléporte côté opposé et tire → dans 1300px d'arène, la salve couvre
+	#           une grande surface, le joueur doit être en HEIGHT pour réduire l'angle
+	# Pluie   : tombant de positions aléatoires → 5–7 plateformes ÉTROITES créent
+	#           une jungle verticale où le joueur saute de plateforme en plateforme
+	# Rafale  : tirs rapides ciblés → lave centrale force à rester dans un couloir exposé
+	# → Venin vert central, nombreuses plateformes étroites et très hautes
 	"elf": {
-		"arena_w_range":    [800.0, 960.0],
-		"plat_count_range": [1, 3],
-		"plat_width_range": [90.0, 140.0],
-		"plat_heights":     [100.0, 160.0, 215.0],
-		"plat_x_zone":      [0.08, 0.92],
+		"arena_w_range":    [1250.0, 1380.0],
+		"plat_count_range": [5, 7],
+		"plat_width_range": [65.0, 100.0],
+		"plat_heights":     [90.0, 145.0, 195.0, 248.0],
+		"plat_x_zone":      [0.06, 0.94],
 		"center_gap":       0.0,
+		"lava_zones":       [[0.37, 0.63]],
+		"lava_color":       Color("#008844"),
 	},
 }
 
@@ -98,8 +120,8 @@ const BOSS_ARENA_PROFILES = {
 
 func _ready():
 	if GameState.boss_type == "":
-		GameState.boss_type = "mage"
-		GameState.boss_hp_joueur = 80
+		get_tree().change_scene_to_file.call_deferred("res://scenes/boss_fight/boss_select_debug.tscn")
+		return
 
 	var profil = BOSS_ARENA_PROFILES.get(GameState.boss_type, BOSS_ARENA_PROFILES["mage"])
 	arena_w = randf_range(profil["arena_w_range"][0], profil["arena_w_range"][1])
@@ -138,6 +160,10 @@ func _creer_arene(profil: Dictionary):
 
 	_generer_plateformes(profil)
 
+	if profil.has("lava_zones"):
+		for zone in profil["lava_zones"]:
+			_creer_zone_lava(zone[0] * arena_w, zone[1] * arena_w, profil["lava_color"])
+
 func _generer_plateformes(profil: Dictionary):
 	var nb       = randi_range(profil["plat_count_range"][0], profil["plat_count_range"][1])
 	var w_min    = profil["plat_width_range"][0]
@@ -145,7 +171,9 @@ func _generer_plateformes(profil: Dictionary):
 	var heights  = profil["plat_heights"]
 	var xz_l     = profil["plat_x_zone"][0]
 	var xz_r     = profil["plat_x_zone"][1]
-	var gap_frac = profil["center_gap"]
+	var gap_frac = profil.get("center_gap", 0.0)
+	# Distance max centre-à-centre franchissable en un saut (JUMP_FORCE=-560, SPEED=200)
+	const MAX_JUMP_GAP = 300.0
 
 	var center_l = arena_w * (0.5 - gap_frac * 0.5)
 	var center_r = arena_w * (0.5 + gap_frac * 0.5)
@@ -166,11 +194,9 @@ func _generer_plateformes(profil: Dictionary):
 
 		var x = randf_range(x_lo, x_hi)
 
-		# Respecter la zone centrale interdite
 		if gap_frac > 0.0 and x + half > center_l and x - half < center_r:
 			continue
 
-		# Éviter les chevauchements et plateformes trop proches à même hauteur
 		var ok = true
 		for p in placed:
 			if abs(p.y - ph) < 30.0 and abs(p.x - x) < (pw + p.z) * 0.5 + 25.0:
@@ -180,7 +206,41 @@ func _generer_plateformes(profil: Dictionary):
 			continue
 
 		placed.append(Vector3(x, ph, pw))
-		_creer_plateforme(Vector2(x, GROUND_Y - ph), Vector2(pw, PLAT_H), true)
+
+	# ── Garantie de jouabilité : aucun trou infranchissable ───────────
+	placed.sort_custom(func(a, b): return a.x < b.x)
+
+	# Pour chaque zone de lave, s'assurer qu'un plateau est accessible
+	# depuis chaque bord (sinon le joueur ne peut pas traverser la lave)
+	if profil.has("lava_zones"):
+		for zone in profil["lava_zones"]:
+			var edge_l = zone[0] * arena_w
+			var edge_r = zone[1] * arena_w
+			if placed.is_empty() or placed[0].x > edge_l + MAX_JUMP_GAP:
+				var bx = clamp(edge_l + MAX_JUMP_GAP * 0.6,
+						xz_l * arena_w + 60.0, xz_r * arena_w - 60.0)
+				placed.insert(0, Vector3(bx,
+						heights[randi() % heights.size()], randf_range(w_min, w_max)))
+			if placed.is_empty() or placed[-1].x < edge_r - MAX_JUMP_GAP:
+				var bx = clamp(edge_r - MAX_JUMP_GAP * 0.6,
+						xz_l * arena_w + 60.0, xz_r * arena_w - 60.0)
+				placed.append(Vector3(bx,
+						heights[randi() % heights.size()], randf_range(w_min, w_max)))
+		placed.sort_custom(func(a, b): return a.x < b.x)
+
+	# Combler les trous trop larges entre plateformes consécutives
+	var fi = 0
+	while fi < placed.size() - 1:
+		if placed[fi + 1].x - placed[fi].x > MAX_JUMP_GAP:
+			var bx = (placed[fi].x + placed[fi + 1].x) * 0.5
+			placed.insert(fi + 1, Vector3(bx,
+					heights[randi() % heights.size()], randf_range(w_min, w_max)))
+		else:
+			fi += 1
+
+	# Créer les plateformes physiques
+	for p in placed:
+		_creer_plateforme(Vector2(p.x, GROUND_Y - p.y), Vector2(p.z, PLAT_H), true)
 
 # ── Constructeurs ──────────────────────────────────────────────────────────────
 
@@ -221,6 +281,89 @@ func _creer_plateforme(pos: Vector2, taille: Vector2, one_way: bool = false):
 	bord.size     = Vector2(taille.x, 4)
 	bord.position = Vector2(-taille.x * 0.5, -taille.y * 0.5)
 	body.add_child(bord)
+
+	if one_way:
+		body.set_meta("width", taille.x)
+		platform_nodes.append(body)
+
+# ── Zones de danger (lave / venin / feu divin) ───────────────────────────────
+
+func _creer_zone_lava(x_debut: float, x_fin: float, couleur: Color):
+	var largeur = x_fin - x_debut
+
+	# Enregistre pour le check de dégâts
+	lava_zones_data.append({"x_min": x_debut, "x_max": x_fin})
+
+	# Fond sombre
+	var fond = ColorRect.new()
+	fond.color    = couleur.darkened(0.55)
+	fond.position = Vector2(x_debut, GROUND_Y)
+	fond.size     = Vector2(largeur, 52)
+	$World.add_child(fond)
+
+	# Surface brillante (bande haute)
+	var surface = ColorRect.new()
+	surface.color    = couleur.lightened(0.15)
+	surface.position = Vector2(x_debut, GROUND_Y)
+	surface.size     = Vector2(largeur, 5)
+	$World.add_child(surface)
+
+	# Ligne de danger juste au-dessus du sol (bord supérieur, très brillant)
+	var bord = ColorRect.new()
+	bord.color    = couleur.lightened(0.5)
+	bord.color.a  = 0.8
+	bord.position = Vector2(x_debut, GROUND_Y - 3)
+	bord.size     = Vector2(largeur, 3)
+	$World.add_child(bord)
+
+	# Bulles / éclaboussures aléatoires
+	var rng = RandomNumberGenerator.new()
+	rng.seed = int(x_debut * 137 + largeur * 31)
+	for _i in int(largeur / 35):
+		var bub = ColorRect.new()
+		var bsz = rng.randf_range(3.5, 9.0)
+		bub.color    = couleur.lightened(rng.randf_range(0.1, 0.5))
+		bub.color.a  = rng.randf_range(0.45, 0.8)
+		bub.size     = Vector2(bsz, bsz)
+		bub.position = Vector2(
+			x_debut + rng.randf_range(4, largeur - 8),
+			GROUND_Y + rng.randf_range(5, 40)
+		)
+		$World.add_child(bub)
+
+func _transition_phase_deux():
+	# Faire tomber les plus grandes plateformes en premier
+	platform_nodes.sort_custom(func(a, b): return a.get_meta("width") > b.get_meta("width"))
+	var nb = platform_nodes.size() / 2
+	for i in nb:
+		var p = platform_nodes[i]
+		if not is_instance_valid(p): continue
+		p.collision_layer = 0
+		var tw = p.create_tween()
+		tw.tween_property(p, "modulate", Color(2.2, 0.15, 0.05), 0.30)
+		tw.tween_property(p, "position", p.position + Vector2(0, 150), 0.50)
+		tw.tween_callback(p.queue_free)
+	platform_nodes = platform_nodes.slice(nb)
+
+	# Deux nouvelles plaques de lave au sol
+	_creer_zone_lava(arena_w * 0.20, arena_w * 0.33, Color("#dd2200"))
+	_creer_zone_lava(arena_w * 0.67, arena_w * 0.80, Color("#dd2200"))
+
+func _verifier_lava(delta: float):
+	if lava_zones_data.is_empty() or not is_instance_valid(player_node):
+		return
+	_lava_cd -= delta
+	if _lava_cd > 0.0:
+		return
+	# Seulement si le joueur est proche du sol
+	if player_node.global_position.y < GROUND_Y - 65:
+		return
+	var px = player_node.global_position.x
+	for zone in lava_zones_data:
+		if px >= zone["x_min"] and px <= zone["x_max"]:
+			player_node.take_damage(LAVA_DMG)
+			_lava_cd = 0.42
+			return
 
 # ── Spawn ──────────────────────────────────────────────────────────────────────
 
@@ -337,7 +480,7 @@ func _nom_boss() -> String:
 
 # ── Update ─────────────────────────────────────────────────────────────────────
 
-func _process(_delta):
+func _process(delta: float):
 	if not is_instance_valid(player_node) or not is_instance_valid(boss_node):
 		return
 	hud_player_bar.value = float(player_node.current_hp) / float(player_node.max_hp) * 100.0
@@ -346,6 +489,7 @@ func _process(_delta):
 		hud_phase_label.text = "Phase II  ⚠"
 		hud_phase_label.add_theme_color_override("font_color", Color("#ff4444"))
 	_update_bouton_dash()
+	_verifier_lava(delta)
 
 func _update_bouton_dash() -> void:
 	if not dash_btn_bg or not is_instance_valid(player_node): return
