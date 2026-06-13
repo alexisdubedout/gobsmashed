@@ -33,6 +33,7 @@ var dash_active:    bool = false
 var dash_timer:     float = 0.0
 var dash_cd:        float = 0.0
 var invincible:     bool  = false
+var _iframes:       float = 0.0   # timer i-frames suite à un coup
 var _knockback_timer: float = 0.0
 
 const DOUBLE_TAP   = 0.28
@@ -61,6 +62,16 @@ func _ready():
 
 func _physics_process(delta):
 	dash_cd = max(dash_cd - delta, 0.0)
+
+	# Flash i-frames (coup reçu) — géré ici pour être garanti chaque frame
+	if _iframes > 0.0:
+		_iframes -= delta
+		if not dash_active:
+			$Sprite2D.modulate = Color(2.2, 0.3, 0.05) if fmod(_iframes * 10.0, 2.0) >= 1.0 else Color(1.0, 1.0, 1.0, 0.3)
+		if _iframes <= 0.0:
+			invincible = false
+			if not dash_active:
+				$Sprite2D.modulate = Color(1, 1, 1)
 
 	if dash_active:
 		dash_timer -= delta
@@ -108,7 +119,7 @@ func _physics_process(delta):
 			face_dir = -1
 		if _knockback_timer > 0.0:
 			_knockback_timer -= delta
-			velocity.x = move_toward(velocity.x, 0.0, 1300.0 * delta)
+			velocity.x = move_toward(velocity.x, 0.0, 1400.0 * delta)
 		else:
 			velocity.x = dir * SPEED * GameState.get_vitesse_bonus()
 
@@ -159,47 +170,41 @@ func _lancer_dash():
 	dash_timer  = dash_dur
 	dash_cd     = dash_cd_dur
 	$Sprite2D.scale = Vector2(1.5, 0.6)
+	invincible = true
 	_iframe()
 
 func _iframe():
-	invincible = true
 	var t = 0.0
 	while t < iframe_dur:
 		$Sprite2D.modulate = Color(0.3, 0.8, 2.0) if int(t * 20) % 2 == 0 else Color(1, 1, 1)
 		await get_tree().process_frame
+		if not is_instance_valid(self): return
 		t += get_process_delta_time()
-	if is_instance_valid(self):
+	if is_instance_valid(self) and not dash_active:
 		$Sprite2D.modulate = Color(1, 1, 1)
+	# Ne vide invincible que si les i-frames de coup sont aussi terminées
+	if is_instance_valid(self) and _iframes <= 0.0:
 		invincible = false
 
 func take_damage(amount: int) -> bool:
 	if invincible: return false
 	current_hp -= amount
+	invincible = true
+	_iframes = 0.6
 	if is_instance_valid(boss_ref):
 		var dir = sign(global_position.x - boss_ref.global_position.x)
 		if dir == 0: dir = 1
-		velocity.x = dir * 330.0
-		velocity.y = -200.0
-		_knockback_timer = 0.25
-	_flash_hit()
+		velocity.x = dir * 600.0
+		velocity.y = -260.0
+		_knockback_timer = 0.45
 	if current_hp <= 0:
+		_iframes = 0.0
+		invincible = false
 		_mourir()
 	return true
 
 func take_damage_from(amount: int, _source) -> void:
 	take_damage(amount)
-
-func _flash_hit():
-	invincible = true
-	var t = 0.0
-	while t < 0.6 and current_hp > 0:
-		$Sprite2D.modulate = Color(2.0, 0.4, 0.1) if int(t * 10) % 2 == 0 else Color(1, 1, 1, 0.5)
-		await get_tree().process_frame
-		if not is_instance_valid(self): return
-		t += get_process_delta_time()
-	if is_instance_valid(self):
-		$Sprite2D.modulate = Color(1, 1, 1)
-		invincible = false
 
 func _mourir():
 	set_physics_process(false)
