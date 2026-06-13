@@ -119,11 +119,23 @@ Le `Sprite2D` existant continue de piloter le rendu en attendant.
 - **Ajouté** : 7 nœuds `AnimatedSprite2D`, tous `visible=false`
 - **Conservé** : `Sprite2D` legacy, logique `boss.gd` intacte
 
+### boss_platformer.tscn
+- **CollisionShape2D** : `RectangleShape2D(40×52)` → `CapsuleShape2D(radius=16, height=48)`
+  - Adapté au scale=2.4 du boss → hitbox effective ~77×115px (vs 96×125px originale)
+  - r=6/h=20 (standard top-down) était trop petit à ce scale et causait un passage à travers le sol
+- **Ajouté** : 7 nœuds `AnimatedSprite2D`, tous `visible=false`
+- **Conservé** : `Sprite2D` legacy, logique `boss_platformer.gd` intacte
+
+### player_platformer.tscn
+- **CollisionShape2D** : Revenu à `CapsuleShape2D(radius=11, height=26)` (valeur originale)
+  - Adapté au scale=1.8 → hitbox effective ~40×47px
+  - r=6/h=20 réduisait la hitbox à ~22px, risque de passage à travers les plateformes
+- **Ajouté** : 7 nœuds `AnimatedSprite2D`, tous `visible=false`
+- **Conservé** : `Sprite2D` legacy, logique `player_platformer.gd` intacte
+
 ### Scènes NON modifiées
 | Scène | Raison |
 |---|---|
-| `boss_fight/boss_platformer.tscn` | Vue side-scroller, pas top-down |
-| `boss_fight/player_platformer.tscn` | Vue side-scroller, pas top-down |
 | `projectiles/coin.tscn` | Projectile, hors scope |
 | `projectiles/magic_orb.tscn` | Projectile, hors scope |
 | `effects/poison_pool.tscn` | Effet zone, hors scope |
