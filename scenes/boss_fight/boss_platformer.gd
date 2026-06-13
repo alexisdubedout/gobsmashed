@@ -298,13 +298,32 @@ func _teleporter():
 	en_teleportation = true
 	tele_timer = randf_range(8.0, 13.0) if phase == 0 else randf_range(5.0, 8.0)
 
-	# Destination offensive : flanc du joueur, côté opposé à notre position
-	var side = -sign(player_ref.global_position.x - global_position.x)
-	if side == 0: side = 1
-	var dest_x = clamp(
-		player_ref.global_position.x + side * randf_range(130.0, 210.0),
-		80.0, arena_width - 80.0
-	)
+	# Zones fixes — garantit un déplacement minimum de ~35% de l'arène
+	var zones_x = [arena_width * 0.15, arena_width * 0.50, arena_width * 0.85]
+	var px = player_ref.global_position.x
+
+	# Zone courante du boss
+	var cur_zone = 0
+	var min_d = INF
+	for i in zones_x.size():
+		var d = abs(global_position.x - zones_x[i])
+		if d < min_d:
+			min_d = d
+			cur_zone = i
+
+	# Zone cible : parmi les autres, la plus proche du joueur (offensive)
+	var dest_zone = (cur_zone + 1) % 3
+	var best_dist = abs(px - zones_x[dest_zone])
+	for i in zones_x.size():
+		if i == cur_zone: continue
+		var d = abs(px - zones_x[i])
+		if d < best_dist:
+			best_dist = d
+			dest_zone = i
+
+	tele_zone = dest_zone
+	var dest_x = zones_x[dest_zone] + randf_range(-50.0, 50.0)
+	dest_x = clamp(dest_x, 80.0, arena_width - 80.0)
 
 	# ── Incantation : scintille doré 0.9s ────────────────────────
 	var t = 0.0
