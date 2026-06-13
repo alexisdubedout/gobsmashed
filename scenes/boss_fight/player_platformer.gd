@@ -33,9 +33,15 @@ var dash_active:    bool = false
 var dash_timer:     float = 0.0
 var dash_cd:        float = 0.0
 var invincible:     bool  = false
+var _knockback_timer: float = 0.0
+
+const DOUBLE_TAP   = 0.28
+var _fwd_tap_time: float = -99.0
+var _down_tap_time: float = -99.0
 
 func _ready():
 	up_direction = Vector2.UP
+	scale = Vector2(1.8, 1.8)
 	max_hp = 100 + GameState.get_hp_max_bonus()
 	current_hp = clamp(GameState.boss_hp_joueur, 1, max_hp)
 
@@ -71,9 +77,27 @@ func _physics_process(delta):
 		if Input.is_action_just_pressed("move_up") and is_on_floor():
 			velocity.y = JUMP_FORCE
 
-		if (dash_requested or Input.is_action_just_pressed("move_down")) and is_on_floor() and dash_cd <= 0.0:
+		# HUD button → dash
+		if dash_requested and is_on_floor() and dash_cd <= 0.0:
 			dash_requested = false
 			_lancer_dash()
+		else:
+			dash_requested = false
+
+		# Double-tap avant → dash
+		var fwd_action = "move_right" if face_dir > 0 else "move_left"
+		if Input.is_action_just_pressed(fwd_action):
+			var t = Time.get_ticks_msec() * 0.001
+			if t - _fwd_tap_time < DOUBLE_TAP and is_on_floor() and dash_cd <= 0.0:
+				_lancer_dash()
+			_fwd_tap_time = t
+
+		# Double-tap bas → descendre de la plateforme
+		if Input.is_action_just_pressed("move_down"):
+			var t = Time.get_ticks_msec() * 0.001
+			if t - _down_tap_time < DOUBLE_TAP and is_on_floor():
+				_descendre_plateforme()
+			_down_tap_time = t
 
 		var dir = 0.0
 		if Input.is_action_pressed("move_right"):
@@ -82,7 +106,11 @@ func _physics_process(delta):
 		if Input.is_action_pressed("move_left"):
 			dir -= 1.0
 			face_dir = -1
-		velocity.x = dir * SPEED * GameState.get_vitesse_bonus()
+		if _knockback_timer > 0.0:
+			_knockback_timer -= delta
+			velocity.x = move_toward(velocity.x, 0.0, 1300.0 * delta)
+		else:
+			velocity.x = dir * SPEED * GameState.get_vitesse_bonus()
 
 		move_and_slide()
 		_animer(delta, dir)
@@ -119,6 +147,13 @@ func _fire_coin(target_pos: Vector2, dmg: int):
 	coin.piece_lourde_niveau = pieces_lourdes_niveau
 	get_tree().current_scene.add_child(coin)
 
+func _descendre_plateforme():
+	set_collision_mask_value(2, false)
+	velocity.y = 80.0
+	await get_tree().create_timer(0.30).timeout
+	if is_instance_valid(self):
+		set_collision_mask_value(2, true)
+
 func _lancer_dash():
 	dash_active = true
 	dash_timer  = dash_dur
@@ -140,6 +175,12 @@ func _iframe():
 func take_damage(amount: int) -> bool:
 	if invincible: return false
 	current_hp -= amount
+	if is_instance_valid(boss_ref):
+		var dir = sign(global_position.x - boss_ref.global_position.x)
+		if dir == 0: dir = 1
+		velocity.x = dir * 330.0
+		velocity.y = -200.0
+		_knockback_timer = 0.25
 	_flash_hit()
 	if current_hp <= 0:
 		_mourir()
@@ -149,15 +190,23 @@ func take_damage_from(amount: int, _source) -> void:
 	take_damage(amount)
 
 func _flash_hit():
-	$Sprite2D.modulate = Color(2.0, 0.3, 0.3)
-	await get_tree().create_timer(0.15).timeout
+	invincible = true
+	var t = 0.0
+	while t < 0.6 and current_hp > 0:
+		$Sprite2D.modulate = Color(2.0, 0.4, 0.1) if int(t * 10) % 2 == 0 else Color(1, 1, 1, 0.5)
+		await get_tree().process_frame
+		if not is_instance_valid(self): return
+		t += get_process_delta_time()
 	if is_instance_valid(self):
 		$Sprite2D.modulate = Color(1, 1, 1)
+		invincible = false
 
 func _mourir():
 	set_physics_process(false)
 	$Sprite2D.modulate = Color(0.5, 0.2, 0.2)
 	Augments.reset()
-	await get_tree().create_timer(1.2).timeout
-	GameState.ajouter_recompense(GameState.boss_kills_run, GameState.boss_temps_run)
-	get_tree().change_scene_to_file("res://scenes/donjon.tscn")
+	if not is_inside_tree(): return
+	var tree = get_tree()
+	await tree.create_timer(1.2).timeout
+	if not is_instance_valid(self): return
+	tree.change_scene_to_file("res://scenes/donjon.tscn")

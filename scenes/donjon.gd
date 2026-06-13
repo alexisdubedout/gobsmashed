@@ -18,6 +18,8 @@ var label_xp: Label
 var scroll_content: VBoxContainer
 
 func _ready():
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
+	get_window().content_scale_size = Vector2i(405, 720)
 	_construire_ui()
 
 func _construire_ui():

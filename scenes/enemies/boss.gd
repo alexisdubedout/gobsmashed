@@ -70,4 +70,4 @@ func _declencher_combat(player):
 		GameState.boss_kills_run = hud.ennemis_tues
 		GameState.boss_temps_run = hud.temps
 
-	get_tree().change_scene_to_file("res://scenes/boss_fight/boss_fight.tscn")
+	get_tree().change_scene_to_file("res://scenes/boss_fight/boss_intro.tscn")
