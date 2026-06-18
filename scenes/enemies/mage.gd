@@ -9,15 +9,16 @@ var tele_cooldown: float  = 0.0
 var en_teleportation: bool = false
 
 func setup():
-	max_hp = 25
-	current_hp = 25
-	speed = 95
-	base_speed = 95
-	damage = 8
-	shoot_delay = 1.8
-	xp_value = 5
-	anim_frames_count = 8
-	tele_cooldown = randf_range(4.5, 7.0)
+	max_hp          = 25
+	current_hp      = 25
+	speed           = 95
+	base_speed      = 95
+	damage          = 8
+	shoot_delay     = 1.8
+	xp_value        = 5
+	tele_cooldown   = randf_range(4.5, 7.0)
+	enemy_type_name = "mage"
+	body_level      = 1
 
 # Pas d'override de get_direction — avance vers le joueur par défaut (BaseEnemy)
 
@@ -56,21 +57,19 @@ func _teleporter():
 		randf_range(-60.0, 60.0)
 	)
 
-	# Flash de sortie → invisible
-	$Sprite2D.modulate = Color(2.5, 2.5, 3.5)
+	$body.modulate = Color(2.5, 2.5, 3.5)
 	await get_tree().create_timer(0.12).timeout
 	if not is_instance_valid(self): return
-	$Sprite2D.modulate = Color(0.0, 0.0, 0.0, 0.0)
+	$body.modulate = Color(0.0, 0.0, 0.0, 0.0)
 	global_position = dest
 
 	await get_tree().create_timer(0.08).timeout
 	if not is_instance_valid(self): return
 
-	# Flash d'entrée
-	$Sprite2D.modulate = Color(2.5, 2.5, 3.5)
+	$body.modulate = Color(2.5, 2.5, 3.5)
 	await get_tree().create_timer(0.12).timeout
 	if not is_instance_valid(self): return
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = body_color
 
 	# Burst immédiat après apparition
 	for _i in 3:

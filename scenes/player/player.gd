@@ -26,10 +26,10 @@ var attack_timer = 0.0
 var xp = 0
 var xp_next_level = 10
 var level = 1
-var anim_timer = 0.0
-var anim_delay = 0.15
-var anim_frame = 0
 var is_moving = false
+var _face_dir: String = "down"
+var _animator: CharacterAnimator
+var _attack_anim_timer := 0.0
 var flaque_timer = 0.0
 var poison_on_kill = false
 var poison_niveau = 1 
@@ -52,6 +52,17 @@ var invincible:     bool  = false
 var last_move_dir:  Vector2 = Vector2.RIGHT
 
 func _ready():
+	_animator = CharacterAnimator.new()
+	_animator.init(self)
+	var path := "res://assets/sprites/placeholder/body_goblin_frames.tres"
+	if ResourceLoader.exists(path):
+		$body.sprite_frames = load(path)
+	$body.scale   = Vector2(1.0, 1.0)
+	$body.visible = true
+	for layer in ["shadow", "clothes", "armor_chest", "armor_legs", "helmet", "weapon"]:
+		var node = get_node_or_null(layer)
+		if node:
+			node.visible = false
 	level_up_screen = LEVEL_UP_SCENE.instantiate()
 	# Applique les bonus permanents
 	max_hp = 100 + GameState.get_hp_max_bonus()
@@ -62,6 +73,10 @@ func _ready():
 		1: dash_cd_dur = 1.1; iframe_dur_wave = 0.22
 		2: dash_cd_dur = 0.7; iframe_dur_wave = 0.28; dash_dur = 0.24
 		3: dash_cd_dur = 0.5; iframe_dur_wave = 0.35; dash_dur = 0.28
+	if GameState.objets_base["tourelle"]:
+		ajouter_collegue()
+	if GameState.objets_base["piege"]:
+		activer_trappe()
 
 func _input(event):
 	if event is InputEventScreenTouch:
@@ -81,6 +96,8 @@ func _input(event):
 				touch_direction = Vector2.ZERO
 
 func _physics_process(_delta):
+	_attack_anim_timer = max(0.0, _attack_anim_timer - _delta)
+
 	# Mise à jour des cooldowns
 	for key in damage_cooldowns.keys():
 		damage_cooldowns[key] -= _delta
@@ -107,24 +124,19 @@ func _physics_process(_delta):
 		last_move_dir = direction.normalized()
 
 	# Direction et animation
-	var row = 0
 	if direction != Vector2.ZERO:
 		is_moving = true
 		if abs(direction.x) > abs(direction.y):
-			row = 2 if direction.x > 0 else 1
+			_face_dir = "right" if direction.x > 0 else "left"
 		else:
-			row = 0 if direction.y > 0 else 3
+			_face_dir = "up" if direction.y > 0 else "down"
 	else:
 		is_moving = false
 
-	anim_timer += _delta
-	if is_moving and anim_timer >= anim_delay:
-		anim_timer = 0.0
-		anim_frame = (anim_frame + 1) % 3
-	elif not is_moving:
-		anim_frame = 0
-
-	$Sprite2D.frame = row * 3 + anim_frame
+	if _attack_anim_timer > 0.0:
+		_animator.play("attack", _face_dir)
+	else:
+		_animator.play("run" if is_moving else "idle", _face_dir)
 
 	if dash_active:
 		dash_timer -= _delta
@@ -165,6 +177,7 @@ func shoot():
 	var enemies = get_tree().get_nodes_in_group("enemy")
 	if enemies.is_empty():
 		return
+	_attack_anim_timer = 0.4
 	var closest = null
 	var closest_dist = INF
 	for enemy in enemies:
@@ -198,11 +211,11 @@ func _iframe_wave():
 	invincible = true
 	var t = 0.0
 	while t < iframe_dur_wave:
-		$Sprite2D.modulate = Color(0.3, 0.8, 2.0) if int(t * 20) % 2 == 0 else Color(1, 1, 1)
+		$body.modulate = Color(0.3, 0.8, 2.0) if int(t * 20) % 2 == 0 else Color(1, 1, 1)
 		await get_tree().process_frame
 		t += get_process_delta_time()
 	if is_instance_valid(self):
-		$Sprite2D.modulate = Color(1, 1, 1)
+		$body.modulate = Color(1, 1, 1)
 		invincible = false
 
 func take_damage_from(amount: int, source) -> void:

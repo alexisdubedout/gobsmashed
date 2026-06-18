@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b1d2ywh5hbe8i" path="res://scenes/player/player.gd" id="1_3vyb7"]
 [ext_resource type="Texture2D" uid="uid://ckkxx3xj1op1u" path="res://assets/characters/Gobelin.png" id="2_dovo2"]
+[ext_resource type="SpriteFrames" uid="uid://j3acese2pfag" path="res://assets/sprites/placeholder/body_goblin_frames.tres" id="3_bodyframes"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 6.0
@@ -15,6 +16,7 @@ script = ExtResource("1_3vyb7")
 shape = SubResource("CapsuleShape2D_player")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1089250540]
+visible = false
 position = Vector2(-28.5, -17.916672)
 scale = Vector2(1.3653846, 1.2239584)
 texture = ExtResource("2_dovo2")
@@ -32,8 +34,9 @@ offset = Vector2(0, -32)
 
 [node name="body" type="AnimatedSprite2D" parent="."]
 z_index = 0
-visible = false
 offset = Vector2(0, -32)
+sprite_frames = ExtResource("3_bodyframes")
+autoplay = "idle_down"
 
 [node name="clothes" type="AnimatedSprite2D" parent="."]
 z_index = 1

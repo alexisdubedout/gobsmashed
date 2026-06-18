@@ -7,9 +7,10 @@ var tick_timer = 0.0
 var anim_timer = 0.0
 var anim_delay = 0.12
 var anim_frame = 0
+var slowed_by_me: Array = []
 
 func _ready():
-	var scale_factor = 1.0 + (niveau - 1) * 0.5  # niveau 1=1x, 2=1.5x, 3=2x
+	var scale_factor = 1.0 + (niveau - 1) * 0.5
 	scale = Vector2(scale_factor, scale_factor)
 
 func _process(delta):
@@ -23,6 +24,8 @@ func _process(delta):
 		$Sprite2D.frame = anim_frame
 
 	if timer >= DURATION:
+		for enemy in slowed_by_me:
+			if is_instance_valid(enemy): enemy.slowed = false
 		queue_free()
 		return
 
@@ -32,6 +35,7 @@ func _process(delta):
 
 	if tick_timer >= tick_delay:
 		tick_timer = 0.0
+		var enemies_in_range: Array = []
 		var enemies = get_tree().get_nodes_in_group("enemy")
 		for enemy in enemies:
 			var dist = global_position.distance_to(enemy.global_position)
@@ -39,3 +43,11 @@ func _process(delta):
 				enemy.take_damage(degats)
 				if niveau >= 2:
 					enemy.slowed = true
+					if not enemy in slowed_by_me:
+						slowed_by_me.append(enemy)
+				enemies_in_range.append(enemy)
+		if niveau >= 2:
+			for enemy in slowed_by_me.duplicate():
+				if not is_instance_valid(enemy) or not enemy in enemies_in_range:
+					if is_instance_valid(enemy): enemy.slowed = false
+					slowed_by_me.erase(enemy)

@@ -25,7 +25,8 @@ func _physics_process(_delta):
 	
 	# Tire sur l'ennemi le plus proche
 	attack_timer += _delta
-	if attack_timer >= ATTACK_DELAY:
+	var current_delay = ATTACK_DELAY * (0.55 if player.ally_fast else 1.0)
+	if attack_timer >= current_delay:
 		attack_timer = 0.0
 		shoot()
 
