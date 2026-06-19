@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dax5cbpis1m7v"
+
+[deps]
+
+files=["res://assets/mage-lvl-1/credits/credits.notes.translation", "res://assets/mage-lvl-1/credits/credits.authors.translation", "res://assets/mage-lvl-1/credits/credits.licenses.translation", "res://assets/mage-lvl-1/credits/credits.urls.translation"]
+
+source_file="res://assets/mage-lvl-1/credits/credits.csv"
+dest_files=["res://assets/mage-lvl-1/credits/credits.notes.translation", "res://assets/mage-lvl-1/credits/credits.authors.translation", "res://assets/mage-lvl-1/credits/credits.licenses.translation", "res://assets/mage-lvl-1/credits/credits.urls.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

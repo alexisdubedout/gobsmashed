@@ -39,16 +39,23 @@ func _physics_process(_delta):
 			move_and_slide()
 			var flash = sin(state_timer * 20.0)
 			$body.modulate = Color(1.0 + flash * 0.5, 0.8, 0.0)
+			_animator.play("idle", _face_dir)
 			if state_timer >= PREP_DURATION:
 				state_timer = 0.0
 				state = State.CHARGE
 				if player:
 					charge_direction = (player.global_position - global_position).normalized()
+					var d: Vector2 = charge_direction
+					if abs(d.x) > abs(d.y):
+						_face_dir = "right" if d.x > 0 else "left"
+					else:
+						_face_dir = "down" if d.y > 0 else "up"
 				$body.modulate = body_color
 
 		State.CHARGE:
 			velocity = charge_direction * CHARGE_SPEED
 			move_and_slide()
+			_animator.play("attack", _face_dir)
 			if player:
 				var dist = global_position.distance_to(player.global_position)
 				if dist < 35.0:
