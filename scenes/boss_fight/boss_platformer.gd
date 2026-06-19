@@ -109,7 +109,7 @@ func _physics_process(delta):
 	if contact_cooldown > 0:
 		contact_cooldown -= delta
 
-	if phase == 1 and boss_type == "mage":
+	if boss_type == "mage":
 		tele_timer -= delta
 
 	if not attaque_active and not en_teleportation:
@@ -148,10 +148,8 @@ func _mouvement(delta: float):
 			elif abs(dx) < 80:  velocity.x = -sign(dx) * 130.0
 			else:               velocity.x = move_toward(velocity.x, 0, 350 * delta)
 		"mage":
-			var ideal = 250.0
-			if abs(dx) > ideal + 50:    velocity.x = sign(dx) * 90.0
-			elif abs(dx) < ideal - 50:  velocity.x = -sign(dx) * 90.0
-			else:                       velocity.x = move_toward(velocity.x, 0, 200 * delta)
+			var spd = 100.0 if phase == 0 else 130.0
+			velocity.x = sign(dx) * spd if abs(dx) > 55 else move_toward(velocity.x, 0, 300 * delta)
 
 	saut_timer += delta
 	if is_on_floor() and not attaque_active:
@@ -272,7 +270,7 @@ func _lancer_attaque():
 	seq_index += 1
 	attaque_active = false
 
-	if boss_type == "mage" and phase == 1 and tele_timer <= 0 and not en_teleportation:
+	if boss_type == "mage" and tele_timer <= 0 and not en_teleportation:
 		_teleporter()
 
 func _executer(nom: String):
@@ -298,17 +296,36 @@ func _executer(nom: String):
 
 func _teleporter():
 	en_teleportation = true
-	tele_timer = randf_range(7.0, 11.0)
+	tele_timer = randf_range(8.0, 13.0) if phase == 0 else randf_range(5.0, 8.0)
 
-	# Choisir une zone différente de l'actuelle (0=gauche 1=centre 2=droite)
-	var zones_x = [arena_width * 0.18, arena_width * 0.50, arena_width * 0.80]
-	var dest = randi() % 3
-	while dest == tele_zone:
-		dest = randi() % 3
-	tele_zone = dest
-	var dest_x = zones_x[dest]
+	# Zones fixes — garantit un déplacement minimum de ~35% de l'arène
+	var zones_x = [arena_width * 0.15, arena_width * 0.50, arena_width * 0.85]
+	var px = player_ref.global_position.x
 
-	# ── Phase 1 : cast (mage incante, scintille doré 0.9s) ───────
+	# Zone courante du boss
+	var cur_zone = 0
+	var min_d = INF
+	for i in zones_x.size():
+		var d = abs(global_position.x - zones_x[i])
+		if d < min_d:
+			min_d = d
+			cur_zone = i
+
+	# Zone cible : parmi les autres, la plus proche du joueur (offensive)
+	var dest_zone = (cur_zone + 1) % 3
+	var best_dist = abs(px - zones_x[dest_zone])
+	for i in zones_x.size():
+		if i == cur_zone: continue
+		var d = abs(px - zones_x[i])
+		if d < best_dist:
+			best_dist = d
+			dest_zone = i
+
+	tele_zone = dest_zone
+	var dest_x = zones_x[dest_zone] + randf_range(-50.0, 50.0)
+	dest_x = clamp(dest_x, 80.0, arena_width - 80.0)
+
+	# ── Incantation : scintille doré 0.9s ────────────────────────
 	var t = 0.0
 	while t < 0.9:
 		if not is_instance_valid(self): return
@@ -317,7 +334,7 @@ func _teleporter():
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
-	# ── Phase 2 : fantôme à la destination (0.55s) ───────────────
+	# ── Fantôme à la destination (0.55s) ─────────────────────────
 	var ghost = Sprite2D.new()
 	ghost.texture  = $Sprite2D.texture
 	ghost.hframes  = 8
@@ -339,7 +356,7 @@ func _teleporter():
 
 	if is_instance_valid(ghost): ghost.queue_free()
 
-	# ── Phase 3 : apparition (flash blanc → fondu 0.35s) ─────────
+	# ── Apparition : flash blanc → fondu 0.35s ───────────────────
 	global_position.x = dest_x
 	t = 0.0
 	while t < 0.35:
@@ -349,8 +366,17 @@ func _teleporter():
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
+	if not is_instance_valid(self): return
+	$Sprite2D.modulate = Color(1, 1, 1)
+
+	# Burst immédiat après apparition
+	var nb_tir = 3 if phase == 1 else 2
+	for _i in nb_tir:
+		if not is_instance_valid(self) or not is_instance_valid(player_ref): break
+		_spawn_orb(global_position, (player_ref.global_position - global_position).normalized())
+		await get_tree().create_timer(0.16).timeout
+
 	if is_instance_valid(self):
-		$Sprite2D.modulate = Color(1, 1, 1)
 		en_teleportation = false
 
 # ══ GUERRIER ═══════════════════════════════════════════════════

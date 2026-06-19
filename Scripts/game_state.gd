@@ -59,7 +59,6 @@ func ajouter_recompense(kills: int, temps: float):
 	or_total += kills * 5
 	xp_total += int(temps * 2)
 	sauvegarder()
-	print("Or: ", GameState.or_total, " XP: ", GameState.xp_total)
 
 func acheter_stat(stat: String) -> bool:
 	var cout = COUT_STATS[stat] * (stats[stat] + 1)

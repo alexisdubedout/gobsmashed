@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/projectiles/arrow.gd" id="1_arrow"]
+[ext_resource type="Texture2D" path="res://assets/projectiles/arrow.png" id="2_arrow"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_arrow"]
+size = Vector2(28, 6)
+
+[node name="Arrow" type="Area2D"]
+script = ExtResource("1_arrow")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_arrow")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_arrow")

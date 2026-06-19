@@ -106,6 +106,8 @@ func next_wave():
 		_vider_ennemis()
 		_spawner_boss()
 		return
+	if GameState.objets_base["lit"] and player:
+		player.current_hp = min(player.max_hp, player.current_hp + 20)
 	afficher_vague()
 
 func _tourelle_tirer():
@@ -142,7 +144,6 @@ func _spawner_boss():
 		hud.afficher_annonce_boss(type)
 
 func afficher_vague():
-	print("=== VAGUE ", current_wave + 1, " / ", WAVES.size(), " ===")
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud:
 		hud.update_wave(current_wave + 1, WAVES.size())

@@ -44,6 +44,10 @@ func _physics_process(_delta):
 				enemy.take_damage(damage)
 				if piece_lourde_niveau >= 1:
 					enemy.slowed = true
+					var slow_dur: float = 1.5 + float(piece_lourde_niveau - 1)
+					get_tree().create_timer(slow_dur).timeout.connect(
+						func(): if is_instance_valid(enemy): enemy.slowed = false
+					)
 				if piece_lourde_niveau >= 3:
 					enemy.rooted = true
 					await get_tree().create_timer(0.5).timeout
