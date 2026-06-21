@@ -37,24 +37,14 @@ func _ready():
 	_placer_base()
 	afficher_vague()
 
-func _placer_base():
-	var base = Node2D.new()
-	base.name = "Base"
-	base.z_index = 10
-	get_parent().add_child(base)
-	base.global_position = player.global_position if player else Vector2.ZERO
-
-	# Test visuel — carré rouge vif
-	var test = Polygon2D.new()
-	test.polygon = PackedVector2Array([
-		Vector2(-30, -30), Vector2(30, -30),
-		Vector2(30, 30), Vector2(-30, 30)
-	])
-	test.color = Color.RED
-	base.add_child(test)
-
-	base_position = base.global_position
-	print("Base placée à ", base.global_position)
+func _input(event: InputEvent):
+	if not OS.is_debug_build():
+		return
+	var key := event as InputEventKey
+	if key and key.pressed and key.keycode == KEY_F9:
+		wave_active = false
+		_vider_ennemis()
+		_spawner_boss()
 
 func _process(delta):
 	if not player or not wave_active:
@@ -134,14 +124,27 @@ func _vider_ennemis():
 
 func _spawner_boss():
 	var type = BOSS_TYPES[randi() % BOSS_TYPES.size()]
+	var boss_pos: Vector2 = player.global_position + Vector2(0, -160) if player else Vector2.ZERO
+
 	var boss = BOSS_SCENE.instantiate()
 	boss.setup(type)
-	if player:
-		boss.global_position = player.global_position + Vector2(0, -500)
+	boss.global_position = boss_pos
 	get_parent().add_child(boss)
+
+	# Surprise : horde de renforts du même type depuis tous les bords
+	_spawner_renforts_boss(type)
+
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud:
 		hud.afficher_annonce_boss(type)
+
+func _spawner_renforts_boss(type: String):
+	var nb := 6
+	for i in nb:
+		var angle := i * TAU / nb + randf_range(-0.2, 0.2)
+		var enemy = ENEMIES[type].instantiate()
+		enemy.global_position = player.global_position + Vector2(cos(angle), sin(angle)) * spawn_radius
+		get_parent().add_child(enemy)
 
 func afficher_vague():
 	var hud = get_tree().get_first_node_in_group("hud")

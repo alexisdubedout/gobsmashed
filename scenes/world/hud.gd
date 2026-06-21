@@ -97,10 +97,10 @@ func ajouter_kill():
 
 func afficher_annonce_boss(type: String):
 	var noms = {
-		"guerrier": "Le Guerrier Légendaire",
-		"paladin": "Le Paladin Maudit",
-		"elf": "L'Elfe Fantôme",
-		"mage": "Le Grand Mage",
+		"guerrier": "Grug le Magnifique",
+		"paladin":  "Régis le Sanctifié",
+		"elf":      "Sylvara l'Insaisissable",
+		"mage":     "Nadège la Ténébreuse",
 	}
 	var label = Label.new()
 	label.text = "★  " + noms.get(type, "Boss") + "  ★\napproche..."
