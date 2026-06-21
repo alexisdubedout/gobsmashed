@@ -3,12 +3,7 @@ extends CharacterBody2D
 const COIN_SCENE = preload("res://scenes/projectiles/coin.tscn")
 const ORB_SCENE  = preload("res://scenes/projectiles/magic_orb.tscn")
 
-const TEXTURES = {
-	"guerrier": "res://assets/characters/Guerrier.png",
-	"paladin":  "res://assets/characters/Paladin.png",
-	"elf":      "res://assets/characters/Elf.png",
-	"mage":     "res://assets/characters/Mage.png",
-}
+const SPRITES_PATH := "res://assets/sprites/placeholder/"
 
 const STATS = {
 	"guerrier": {"hp": 500, "scale": 2.4, "delay_p1": 1.8, "delay_p2": 1.1},
@@ -63,8 +58,12 @@ var contact_dmg: int       = 18
 var saut_timer: float    = 0.0
 var saut_cooldown: float = 2.2
 
-var anim_timer: float = 0.0
-var anim_frame: int   = 0
+var slowed: bool = false  # requis par coin.gd — ignoré en phase boss
+var _face_dir: String = "right"
+var _was_on_floor: bool = true
+var _attack_anim_timer: float = 0.0
+var _pause_timer: float = 0.0
+var _next_pause: float = 2.0
 
 # Téléportation mage (phase 2 uniquement)
 var tele_timer: float    = 4.0  # Délai avant la première téléportation
@@ -73,7 +72,7 @@ var en_teleportation: bool = false
 
 # ── Setup ──────────────────────────────────────────────────────
 
-func setup(type: String, p_player, p_arena_width: float):
+func setup(type: String, p_player, p_arena_width: float, level: int = 1):
 	boss_type   = type
 	player_ref  = p_player
 	arena_width = p_arena_width
@@ -83,9 +82,12 @@ func setup(type: String, p_player, p_arena_width: float):
 	delay_p1  = s["delay_p1"]
 	delay_p2  = s["delay_p2"]
 	scale = Vector2(s["scale"], s["scale"])
-	$Sprite2D.texture = load(TEXTURES[type])
-	$Sprite2D.hframes = 8
-	$Sprite2D.vframes = 4
+	$Sprite2D.visible = false
+	var tres := SPRITES_PATH + "body_%s_level_%d_frames.tres" % [type, level]
+	if ResourceLoader.exists(tres):
+		$body.sprite_frames = load(tres)
+		$body.visible = true
+		$body.offset  = Vector2(0, -1)
 	if type == "guerrier":
 		saut_cooldown = 5.0
 
@@ -100,12 +102,26 @@ func _physics_process(delta):
 
 	_mouvement(delta)
 	move_and_slide()
+	# Shake à l'atterrissage après un saut
+	if is_on_floor() and not _was_on_floor and velocity.y >= 0:
+		_trigger_shake(9.0, 0.22)
+	_was_on_floor = is_on_floor()
 	_animer(delta)
 
+	_attack_anim_timer = max(0.0, _attack_anim_timer - delta)
+	if not attaque_active and not en_charge:
+		_next_pause -= delta
+		if _next_pause <= 0.0:
+			_pause_timer  = randf_range(0.3, 0.65)
+			_next_pause   = randf_range(2.2, 4.0)
+		_pause_timer = max(0.0, _pause_timer - delta)
 	if en_charge and contact_cooldown <= 0 and is_instance_valid(player_ref):
 		if global_position.distance_to(player_ref.global_position) < 58:
 			player_ref.take_damage(contact_dmg)
 			contact_cooldown = 0.5
+			_attack_anim_timer = 0.2
+			_trigger_shake(7.0, 0.2)
+			_trigger_particles(player_ref.global_position + Vector2(0, -20), Color("#ff3300"))
 	if contact_cooldown > 0:
 		contact_cooldown -= delta
 
@@ -124,6 +140,9 @@ func _physics_process(delta):
 func _mouvement(delta: float):
 	if en_teleportation:
 		velocity.x = move_toward(velocity.x, 0, 400 * delta)
+		return
+	if _pause_timer > 0.0:
+		velocity.x = move_toward(velocity.x, 0, 600 * delta)
 		return
 	if en_charge:
 		velocity.x = dir_charge * vitesse_charge
@@ -215,11 +234,11 @@ func _verifier_phase():
 func _intro_phase_deux_guerrier():
 	attaque_active = true
 	for _i in 8:
-		$Sprite2D.modulate = Color(2.5, 0.1, 0.1)
+		$body.modulate = Color(2.5, 0.1, 0.1)
 		if not is_inside_tree(): return
 		await get_tree().create_timer(0.09).timeout
 		if not is_inside_tree(): return
-		$Sprite2D.modulate = Color(1, 1, 1)
+		$body.modulate = Color(1, 1, 1)
 		await get_tree().create_timer(0.06).timeout
 
 	await _guerrier_stomp(240.0, 16)
@@ -239,19 +258,48 @@ func _intro_phase_deux_guerrier():
 
 func _annonce_phase_deux():
 	for _i in 8:
-		$Sprite2D.modulate = Color(2.5, 0.1, 0.1)
+		$body.modulate = Color(2.5, 0.1, 0.1)
 		await get_tree().create_timer(0.09).timeout
 		if not is_instance_valid(self): return
-		$Sprite2D.modulate = Color(1, 1, 1)
+		$body.modulate = Color(1, 1, 1)
 		await get_tree().create_timer(0.06).timeout
 
-func _animer(delta: float):
-	anim_timer += delta
-	if anim_timer >= 0.09:
-		anim_timer = 0.0
-		anim_frame = (anim_frame + 1) % 8
-	if not shield_active:
-		$Sprite2D.frame = anim_frame
+func _animer(_delta: float):
+	if velocity.x > 10:
+		_face_dir = "right"
+	elif velocity.x < -10:
+		_face_dir = "left"
+
+	var anim: String
+	var is_ranged := GameState.boss_type in ["mage", "elf"]
+	if shield_active:
+		anim = "idle"
+	elif (is_ranged and attaque_active) or (not is_ranged and en_charge) or _attack_anim_timer > 0.0:
+		anim = "attack"
+	elif abs(velocity.x) > 20:
+		anim = "run"
+	else:
+		anim = "idle"
+
+	var sf: SpriteFrames = ($body as AnimatedSprite2D).sprite_frames
+	if sf == null: return
+	var full := anim + "_" + _face_dir
+	if not sf.has_animation(full):
+		full = "idle_" + _face_dir
+	if not sf.has_animation(full): return
+	($body as AnimatedSprite2D).speed_scale = 1.5 if anim == "attack" else 1.0
+	if $body.animation != full or not $body.is_playing():
+		$body.play(full)
+
+func _trigger_shake(intensity: float, duration: float = 0.2) -> void:
+	var scene = get_tree().current_scene
+	if is_instance_valid(scene) and scene.has_method("shake"):
+		scene.shake(intensity, duration)
+
+func _trigger_particles(world_pos: Vector2, color: Color) -> void:
+	var scene = get_tree().current_scene
+	if is_instance_valid(scene) and scene.has_method("spawn_hit_particles"):
+		scene.spawn_hit_particles(world_pos, color)
 
 # ── Séquence ───────────────────────────────────────────────────
 
@@ -330,16 +378,16 @@ func _teleporter():
 	while t < 0.9:
 		if not is_instance_valid(self): return
 		var p = sin(t * TAU * 6.0) * 0.5 + 0.5
-		$Sprite2D.modulate = Color(1.0 + p * 1.8, 1.0 + p * 0.8, 0.1 + p * 0.2)
+		$body.modulate = Color(1.0 + p * 1.8, 1.0 + p * 0.8, 0.1 + p * 0.2)
+		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
 	# ── Fantôme à la destination (0.55s) ─────────────────────────
 	var ghost = Sprite2D.new()
-	ghost.texture  = $Sprite2D.texture
-	ghost.hframes  = 8
-	ghost.vframes  = 4
-	ghost.frame    = anim_frame
+	var sf: SpriteFrames = ($body as AnimatedSprite2D).sprite_frames
+	if sf and sf.has_animation($body.animation):
+		ghost.texture = sf.get_frame_texture($body.animation, $body.frame)
 	ghost.scale    = scale
 	ghost.position = Vector2(dest_x, global_position.y)
 	get_tree().current_scene.add_child(ghost)
@@ -351,6 +399,7 @@ func _teleporter():
 			return
 		var p = sin(t * TAU * 5.0) * 0.5 + 0.5
 		ghost.modulate = Color(0.2 + p * 0.4, 0.6 + p * 0.5, 1.0, 0.25 + p * 0.5)
+		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
@@ -362,12 +411,13 @@ func _teleporter():
 	while t < 0.35:
 		if not is_instance_valid(self): return
 		var fade = 1.0 - t / 0.35
-		$Sprite2D.modulate = Color(1.0 + fade * 2.5, 1.0 + fade * 2.5, 1.0 + fade * 2.5)
+		$body.modulate = Color(1.0 + fade * 2.5, 1.0 + fade * 2.5, 1.0 + fade * 2.5)
+		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
 	if not is_instance_valid(self): return
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = Color(1, 1, 1)
 
 	# Burst immédiat après apparition
 	var nb_tir = 3 if phase == 1 else 2
@@ -387,11 +437,11 @@ func _guerrier_charge(vitesse: float, duree: float, dmg: int):
 
 	# Télégraphe rouge lisible (~0.45s) pour laisser le temps de réagir
 	for _i in 5:
-		$Sprite2D.modulate = Color(3.0, 0.05, 0.05)
+		$body.modulate = Color(3.0, 0.05, 0.05)
 		if not is_inside_tree(): return
 		await get_tree().create_timer(0.05).timeout
 		if not is_inside_tree(): return
-		$Sprite2D.modulate = Color(1, 1, 1)
+		$body.modulate = Color(1, 1, 1)
 		if not is_inside_tree(): return
 		await get_tree().create_timer(0.04).timeout
 
@@ -410,6 +460,7 @@ func _guerrier_charge(vitesse: float, duree: float, dmg: int):
 		if trail_cd <= 0.0:
 			_spawn_trail_rouge()
 			trail_cd = 0.06
+		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
@@ -418,23 +469,24 @@ func _guerrier_charge(vitesse: float, duree: float, dmg: int):
 
 	# Stun d'impact — fenêtre de punition pour le joueur
 	if not is_inside_tree(): return
-	$Sprite2D.modulate = Color(0.28, 0.28, 0.28)
+	$body.modulate = Color(0.28, 0.28, 0.28)
 	await get_tree().create_timer(0.45).timeout
 	if not is_inside_tree(): return
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = Color(1, 1, 1)
 	await get_tree().create_timer(0.15).timeout
 
 func _guerrier_stomp(rayon_force: float = 0.0, dmg_force: int = 0):
 	# Télégraphe doré avant le saut
-	$Sprite2D.modulate = Color(2.2, 1.8, 0.15)
+	$body.modulate = Color(2.2, 1.8, 0.15)
 	if not is_inside_tree(): return
 	await get_tree().create_timer(0.20).timeout
 	if not is_inside_tree(): return
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = Color(1, 1, 1)
 
 	velocity.y = -560.0
 	var t = 0.0
 	while not is_on_floor() and t < 1.5:
+		if not is_inside_tree(): return
 		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
@@ -475,7 +527,7 @@ func _guerrier_spin():
 	var t = 0.0
 	while t < duree:
 		if not is_inside_tree(): return
-		$Sprite2D.modulate = Color(1.6 + sin(t * 22.0) * 0.55, 0.12, 0.12)
+		$body.modulate = Color(1.6 + sin(t * 22.0) * 0.55, 0.12, 0.12)
 
 		dmg_cd -= get_process_delta_time()
 		if dmg_cd <= 0.0 and is_instance_valid(player_ref):
@@ -483,31 +535,31 @@ func _guerrier_spin():
 				player_ref.take_damage(dmg_tick)
 				dmg_cd = 0.28
 
+		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
 
 	if not is_inside_tree(): return
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = Color(1, 1, 1)
 	await get_tree().create_timer(0.50).timeout
 
 func _guerrier_double_charge():
 	await _guerrier_charge(930.0, 0.46, 34)
 	if not is_inside_tree(): return
 	# Pause entre les deux charges — joueur peut se repositionner
-	$Sprite2D.modulate = Color(3.0, 0.05, 0.05)
+	$body.modulate = Color(3.0, 0.05, 0.05)
 	await get_tree().create_timer(0.40).timeout
 	if not is_inside_tree(): return
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = Color(1, 1, 1)
 	await _guerrier_charge(970.0, 0.44, 38)
 
 # ── Helpers visuels guerrier ────────────────────────────────────
 
 func _spawn_trail_rouge():
 	var ghost = Sprite2D.new()
-	ghost.texture         = $Sprite2D.texture
-	ghost.hframes         = 8
-	ghost.vframes         = 4
-	ghost.frame           = $Sprite2D.frame
+	var sf: SpriteFrames = ($body as AnimatedSprite2D).sprite_frames
+	if sf and sf.has_animation($body.animation):
+		ghost.texture = sf.get_frame_texture($body.animation, $body.frame)
 	ghost.scale           = scale
 	ghost.modulate        = Color(1.8, 0.04, 0.04, 0.60)
 	ghost.global_position = global_position
@@ -536,6 +588,7 @@ func _creer_onde_choc(rayon: float):
 		onde.size     = Vector2(w, h)
 		onde.position = Vector2(base_x - w * 0.5, base_y - h * 0.5)
 		onde.color.a  = 0.78 * (1.0 - p)
+		if not is_inside_tree(): return
 		await get_tree().process_frame
 		t += get_process_delta_time()
 	if is_instance_valid(onde): onde.queue_free()
@@ -555,14 +608,14 @@ func _paladin_charge(vitesse: float, duree: float, dmg: int):
 
 func _paladin_bouclier():
 	shield_active = true
-	$Sprite2D.modulate = Color(0.3, 0.3, 2.5)
+	$body.modulate = Color(0.3, 0.3, 2.5)
 	for _i in 4:
 		await get_tree().create_timer(0.5).timeout
 		if not is_instance_valid(self): return
 		if is_instance_valid(player_ref):
 			_spawn_coin(global_position, (player_ref.global_position - global_position).normalized(), 15)
 	shield_active = false
-	$Sprite2D.modulate = Color(1, 1, 1)
+	$body.modulate = Color(1, 1, 1)
 	# Explosion de sortie de bouclier
 	for i in 6:
 		var a = i * (TAU / 6.0)
@@ -672,24 +725,39 @@ func take_damage(amount: int):
 	if shield_active: return
 	current_hp -= amount
 	_flash_hit()
+	_trigger_particles(global_position + Vector2(randf_range(-10, 10), -40), Color("#ffaa33"))
 	if current_hp <= 0:
 		_mourir()
 
 func _flash_hit():
-	$Sprite2D.modulate = Color(1.8, 0.4, 0.1)
+	$body.modulate = Color(1.8, 0.4, 0.1)
 	await get_tree().create_timer(0.08).timeout
 	if is_instance_valid(self) and not shield_active:
-		$Sprite2D.modulate = Color(1, 1, 1)
+		$body.modulate = Color(1, 1, 1)
 
 func _mourir():
 	set_physics_process(false)
 	attaque_active = true
-	for _i in 5:
-		$Sprite2D.modulate = Color(2.5, 2.2, 0.3)
-		await get_tree().create_timer(0.13).timeout
-		if not is_instance_valid(self): return
-		$Sprite2D.modulate = Color(0.1, 0.1, 0.1)
-		await get_tree().create_timer(0.09).timeout
+
+	# Effets sur la scène parente
+	var scene = get_tree().current_scene
+	if is_instance_valid(scene) and scene.has_method("on_boss_death"):
+		scene.on_boss_death(global_position)
+
+	# Expansion + dissolve dramatique
+	var body_spr := $body as AnimatedSprite2D
+	body_spr.stop()
+	var tw := body_spr.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(body_spr, "scale",      Vector2(3.2, 3.2), 0.9).set_ease(Tween.EASE_OUT)
+	tw.tween_property(body_spr, "modulate",   Color(2.5, 1.8, 0.3, 0.0), 0.85).set_ease(Tween.EASE_IN)
+	tw.set_parallel(false)
+	tw.tween_interval(0.3)
+
+	await tw.finished
+	if not is_instance_valid(self): return
+
 	Augments.reset()
 	GameState.ajouter_recompense(GameState.boss_kills_run + 60, GameState.boss_temps_run)
+	if not is_inside_tree(): return
 	get_tree().change_scene_to_file("res://scenes/donjon.tscn")
