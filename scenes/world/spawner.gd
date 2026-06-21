@@ -19,16 +19,22 @@ const WAVES = [
 	{"duree": 60, "ennemis": ["guerrier", "paladin", "mage", "elf"], "spawn_delay": 0.8, "spawn_delay_end": 0.4},
 ]
 
+const COIN_SCENE = preload("res://scenes/projectiles/coin.tscn")
+
 var current_wave = 0
 var wave_timer = 0.0
 var spawn_timer = 0.0
 var spawn_radius = 600.0
 var player
 var wave_active = true
+var lit_timer = 0.0
+var tourelle_timer = 0.0
+var base_position = Vector2.ZERO
 
 func _ready():
 	add_to_group("spawner")
 	player = get_tree().get_first_node_in_group("player")
+	_placer_base()
 	afficher_vague()
 
 func _input(event: InputEvent):
@@ -60,6 +66,21 @@ func _process(delta):
 		wave_timer = 0.0
 		next_wave()
 
+	# Lit — soin passif si le joueur est proche de la base
+	if GameState.objets_base["lit"]:
+		lit_timer += delta
+		if lit_timer >= 3.0:
+			lit_timer = 0.0
+			if player and player.global_position.distance_to(base_position) <= 120.0:
+				player.current_hp = min(player.max_hp, player.current_hp + 2)
+
+	# Tourelle — tire sur l'ennemi le plus proche
+	if GameState.objets_base["tourelle"]:
+		tourelle_timer += delta
+		if tourelle_timer >= 1.8:
+			tourelle_timer = 0.0
+			_tourelle_tirer()
+
 func spawn_enemy(pool: Array):
 	var angle = randf() * TAU
 	var offset = Vector2(cos(angle), sin(angle)) * spawn_radius
@@ -78,6 +99,24 @@ func next_wave():
 	if GameState.objets_base["lit"] and player:
 		player.current_hp = min(player.max_hp, player.current_hp + 20)
 	afficher_vague()
+
+func _tourelle_tirer():
+	var enemies = get_tree().get_nodes_in_group("enemy")
+	var closest = null
+	var closest_dist = INF
+	for enemy in enemies:
+		var dist = base_position.distance_to(enemy.global_position)
+		if dist < closest_dist and dist <= 350.0:
+			closest_dist = dist
+			closest = enemy
+	if closest == null:
+		return
+	var coin = COIN_SCENE.instantiate()
+	var dir = (closest.global_position - base_position).normalized()
+	coin.global_position = base_position + dir * 30.0
+	coin.direction = dir
+	coin.damage = int(10 * GameState.get_degats_bonus())
+	get_tree().current_scene.add_child(coin)
 
 func _vider_ennemis():
 	for e in get_tree().get_nodes_in_group("enemy"):

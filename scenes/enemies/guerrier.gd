@@ -39,7 +39,6 @@ func _appliquer_sprite() -> void:
 	$body.scale    = body_visual_scale
 	$body.modulate = body_color
 	$body.visible  = true
-	# Masquer les anciennes couches si elles existent encore dans la scène
 	for layer in ["shadow", "clothes", "armor_chest", "armor_legs", "helmet", "weapon"]:
 		var node = get_node_or_null(layer)
 		if node:
@@ -80,13 +79,13 @@ func animate(direction: Vector2, _delta: float):
 		if abs(to_player.x) > abs(to_player.y):
 			_face_dir = "right" if to_player.x > 0 else "left"
 		else:
-			_face_dir = "up" if to_player.y > 0 else "down"
+			_face_dir = "down" if to_player.y > 0 else "up"
 		_animator.play("attack", _face_dir)
 		return
 	if abs(direction.x) > abs(direction.y):
 		_face_dir = "right" if direction.x > 0 else "left"
 	else:
-		_face_dir = "up" if direction.y > 0 else "down"
+		_face_dir = "down" if direction.y > 0 else "up"
 	_animator.play("run", _face_dir)
 
 func get_separation_force() -> Vector2:

@@ -57,7 +57,7 @@ func _ready():
 	var path := "res://assets/sprites/placeholder/body_goblin_frames.tres"
 	if ResourceLoader.exists(path):
 		$body.sprite_frames = load(path)
-	$body.scale   = Vector2(1.0, 1.0)
+	$body.scale   = Vector2(1.20, 1.20)
 	$body.visible = true
 	for layer in ["shadow", "clothes", "armor_chest", "armor_legs", "helmet", "weapon"]:
 		var node = get_node_or_null(layer)
@@ -68,6 +68,8 @@ func _ready():
 	max_hp = 100 + GameState.get_hp_max_bonus()
 	current_hp = max_hp
 	ATTACK_DELAY = 1.2 / GameState.get_attaque_bonus()
+	# Démarre légèrement en bas de la base
+	global_position = Vector2(0, 80)
 	# La vitesse et les dégâts sont appliqués dynamiquement
 	match Augments.stacks.get("Dash éclair", 0):
 		1: dash_cd_dur = 1.1; iframe_dur_wave = 0.22
@@ -129,7 +131,7 @@ func _physics_process(_delta):
 		if abs(direction.x) > abs(direction.y):
 			_face_dir = "right" if direction.x > 0 else "left"
 		else:
-			_face_dir = "up" if direction.y > 0 else "down"
+			_face_dir = "down" if direction.y > 0 else "up"
 	else:
 		is_moving = false
 

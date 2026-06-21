@@ -85,7 +85,7 @@ func _face_toward_player() -> void:
 	if abs(to_p.x) > abs(to_p.y):
 		_face_dir = "right" if to_p.x > 0 else "left"
 	else:
-		_face_dir = "up" if to_p.y > 0 else "down"
+		_face_dir = "down" if to_p.y > 0 else "up"
 
 
 func _do_zigzag(sign: float) -> void:

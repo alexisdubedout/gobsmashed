@@ -38,6 +38,7 @@ func _physics_process(delta):
 func _shoot():
 	if not player:
 		return
+	_attack_anim_timer = 0.6
 	var projectile = PROJECTILE_SCENE.instantiate()
 	var dir = (player.global_position - global_position).normalized()
 	projectile.global_position = global_position + dir * 30.0
