@@ -85,7 +85,7 @@ func _vider_ennemis():
 
 func _spawner_boss():
 	var type = BOSS_TYPES[randi() % BOSS_TYPES.size()]
-	var boss_pos: Vector2 = player.global_position + Vector2(0, -500) if player else Vector2.ZERO
+	var boss_pos: Vector2 = player.global_position + Vector2(0, -160) if player else Vector2.ZERO
 
 	var boss = BOSS_SCENE.instantiate()
 	boss.setup(type)
