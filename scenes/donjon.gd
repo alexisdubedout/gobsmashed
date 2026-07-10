@@ -8,9 +8,22 @@ const STATS_META = {
 }
 
 const OBJETS_META = {
-	"lit":      {"icone": "🛏️", "nom": "Lit",      "desc": "Régénère des PV entre les waves"},
-	"tourelle": {"icone": "🗼", "nom": "Tourelle", "desc": "Tire automatiquement sur les ennemis proches"},
-	"piege":    {"icone": "🪤", "nom": "Piège",    "desc": "Pose des pièges aléatoires sur le terrain"},
+	"lit":              {"icone": "🛏️", "nom": "Lit",              "desc": "Régénère des PV entre les waves"},
+	"tourelle":         {"icone": "🗼", "nom": "Tourelle",         "desc": "Tire automatiquement sur les ennemis proches"},
+	"piege":            {"icone": "🪤", "nom": "Piège",            "desc": "Pose des pièges aléatoires sur le terrain"},
+	"bouclier":         {"icone": "🛡️", "nom": "Bouclier",         "desc": "Bloque passivement un projectile toutes les 8s"},
+	"bouclier_magique": {"icone": "✨", "nom": "Bouclier magique", "desc": "Le bouclier renvoie aussi le projectile bloqué vers son tireur"},
+}
+
+const SKILLS_META = {
+	"Pièces lourdes":    {"icone": "💰", "nom": "Lancer appuyé",        "saveur": "Je les jette plus fort. Efficace.\nChaque pièce au sol me brise un peu."},
+	"Flaque de poison":  {"icone": "☠️", "nom": "Poches surprises",     "saveur": "Un alchimiste douteux m'a vendu ça.\nPas cher — ce qui m'inquiète."},
+	"Multi-shot":        {"icone": "🪙", "nom": "Salve familiale",       "saveur": "Jeter PLUSIEURS pièces à la fois.\nGrand-père se retourne dans sa tombe."},
+	"Fortification":     {"icone": "🪨", "nom": "Art d'encaisser",       "saveur": "Un vieux nain m'a enseigné ça.\nIl m'a facturé. Évidemment."},
+	"Collègue gobelin":  {"icone": "👺", "nom": "Cousin Vladoslav",      "saveur": "Il travaille pour la famille. Il a négocié\nses propres conditions. J'évite de demander."},
+	"Dash éclair":       {"icone": "💨", "nom": "Fuite digne",           "saveur": "Courir, c'est l'affaire des lâches.\nJe cours donc, mais avec beaucoup de dignité."},
+	"Drain vital":       {"icone": "🩸", "nom": "Récupération malsaine", "saveur": "Je leur siphonne leur force vitale.\nC'est honteux. Mais c'est pas mes pièces d'or."},
+	"Pièces explosives": {"icone": "🧨", "nom": "Héritage volatil",      "saveur": "Des pièces qui explosent. EXPLOSENT.\nJamais remboursé. Jamais pardonné."},
 }
 
 var label_or: Label
@@ -150,19 +163,19 @@ func _construire_contenu():
 	for stat in GameState.stats:
 		scroll_content.add_child(_creer_carte_stat(stat))
 
-	var sep_margin = MarginContainer.new()
-	sep_margin.add_theme_constant_override("margin_left", 16)
-	sep_margin.add_theme_constant_override("margin_right", 16)
-	sep_margin.add_theme_constant_override("margin_top", 6)
-	sep_margin.add_theme_constant_override("margin_bottom", 6)
-	var sep = HSeparator.new()
-	sep.add_theme_color_override("color", Color("#c9922a", 0.25))
-	sep_margin.add_child(sep)
-	scroll_content.add_child(sep_margin)
+	scroll_content.add_child(_creer_separateur())
 
 	scroll_content.add_child(_creer_titre_section("🏚️  OBJETS"))
 	for objet in GameState.objets_base:
+		if objet == "bouclier_magique" and not GameState.objets_base["bouclier"]:
+			continue
 		scroll_content.add_child(_creer_carte_objet(objet))
+
+	scroll_content.add_child(_creer_separateur())
+
+	scroll_content.add_child(_creer_titre_section("📜  SAVOIRS DOUTEUX"))
+	for skill in GameState.COUT_SKILLS:
+		scroll_content.add_child(_creer_carte_skill(skill))
 
 	var spacer = Control.new()
 	spacer.custom_minimum_size.y = 6
@@ -305,6 +318,79 @@ func _creer_carte_objet(objet: String) -> Control:
 		btn.add_theme_color_override("font_color", Color("#e8b84b") if peut_acheter else Color("#664433"))
 		btn.pressed.connect(func():
 			if GameState.acheter_objet(objet):
+				_rafraichir_monnaies()
+				_construire_contenu()
+		)
+	hbox.add_child(btn)
+	return wrapper
+
+func _creer_separateur() -> Control:
+	var sep_margin = MarginContainer.new()
+	sep_margin.add_theme_constant_override("margin_left", 16)
+	sep_margin.add_theme_constant_override("margin_right", 16)
+	sep_margin.add_theme_constant_override("margin_top", 6)
+	sep_margin.add_theme_constant_override("margin_bottom", 6)
+	var sep = HSeparator.new()
+	sep.add_theme_color_override("color", Color("#c9922a", 0.25))
+	sep_margin.add_child(sep)
+	return sep_margin
+
+func _creer_carte_skill(skill: String) -> Control:
+	var meta = SKILLS_META[skill]
+	var debloque = GameState.skills_debloques.get(skill, false)
+	var cout = GameState.COUT_SKILLS[skill]
+	var peut_acheter = GameState.xp_total >= cout and not debloque
+
+	var wrapper = MarginContainer.new()
+	wrapper.add_theme_constant_override("margin_left", 10)
+	wrapper.add_theme_constant_override("margin_right", 10)
+	wrapper.add_theme_constant_override("margin_top", 3)
+	wrapper.add_theme_constant_override("margin_bottom", 3)
+
+	var panel = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color("#0a1a0a", 0.95) if debloque else Color("#1c1208", 0.95)
+	style.border_color = Color("#44aa44", 0.5) if debloque else Color("#c9922a", 0.25)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(10)
+	panel.add_theme_stylebox_override("panel", style)
+	wrapper.add_child(panel)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 10)
+	panel.add_child(hbox)
+
+	var info = VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 3)
+	hbox.add_child(info)
+
+	var nom = Label.new()
+	nom.text = meta["icone"] + "  " + meta["nom"]
+	nom.add_theme_font_size_override("font_size", 14)
+	nom.add_theme_color_override("font_color", Color("#ede0c4"))
+	info.add_child(nom)
+
+	var saveur = Label.new()
+	saveur.text = meta["saveur"]
+	saveur.add_theme_font_size_override("font_size", 10)
+	saveur.add_theme_color_override("font_color", Color("#558855") if debloque else Color("#907050"))
+	saveur.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(saveur)
+
+	var btn = Button.new()
+	btn.custom_minimum_size = Vector2(82, 46)
+	if debloque:
+		btn.text = "✅\nAppris"
+		btn.disabled = true
+		btn.add_theme_color_override("font_color", Color("#44aa44"))
+	else:
+		btn.text = "✨\n" + str(cout) + " xp"
+		btn.disabled = not peut_acheter
+		btn.add_theme_color_override("font_color", Color("#88dd88") if peut_acheter else Color("#664433"))
+		btn.pressed.connect(func():
+			if GameState.debloquer_skill(skill):
 				_rafraichir_monnaies()
 				_construire_contenu()
 		)

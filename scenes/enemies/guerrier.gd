@@ -1,14 +1,16 @@
 extends CharacterBody2D
 class_name BaseEnemy
 
-const BLOOD_POOL_SCENE = preload("res://scenes/effects/blood_pool.tscn")
+const BLOOD_POOL_SCENE       = preload("res://scenes/effects/blood_pool.tscn")
+const GUERRIER_SCENE         = preload("res://scenes/enemies/guerrier.tscn")
+const PIECE_RAMASSABLE_SCENE = preload("res://scenes/projectiles/piece_ramassable.tscn")
 
 const SPRITES_PATH := "res://assets/sprites/placeholder/"
 
 var max_hp    = 40
 var current_hp = 40
-var speed     = 130.0
-var base_speed = 130.0
+var speed     = 165.0
+var base_speed = 165.0
 var damage    = 8
 var xp_value  = 3
 
@@ -25,12 +27,30 @@ var _animator: CharacterAnimator
 var _face_dir := "down"
 var _attack_anim_timer := 0.0
 
+# Skills niveau difficulté (cumulatifs)
+var diff: int = 1
+var _en_rage:         bool  = false   # niv 2 : ×2 vitesse sous 30% HP
+var _saut_cd:         float = 0.0    # niv 3 : mini-charge périodique
+var _saut_dir:        Vector2 = Vector2.ZERO
+var _saut_actif:      bool  = false
+var _resistance:      int   = 0      # niv 4 : −2 dégâts/coup
+var _ressuscite:      bool  = false  # niv 5 : revient une fois (utilisé dans die())
+
 func _ready():
 	player = get_tree().get_first_node_in_group("player")
 	setup()
+	if diff == 1:
+		diff = GameState.niveau_difficulte
 	_animator = CharacterAnimator.new()
 	_animator.init(self)
 	_appliquer_sprite()
+	_activer_competences()
+
+func _activer_competences() -> void:
+	if diff >= 4:
+		_resistance = 2
+	if diff >= 5:
+		_ressuscite = false  # disponible une fois
 
 func _appliquer_sprite() -> void:
 	var path := SPRITES_PATH + "body_%s_level_%d_frames.tres" % [enemy_type_name, body_level]
@@ -39,10 +59,30 @@ func _appliquer_sprite() -> void:
 	$body.scale    = body_visual_scale
 	$body.modulate = body_color
 	$body.visible  = true
+	_appliquer_outline($body)
 	for layer in ["shadow", "clothes", "armor_chest", "armor_legs", "helmet", "weapon"]:
 		var node = get_node_or_null(layer)
 		if node:
 			node.visible = false
+
+static func _appliquer_outline(sprite: CanvasItem) -> void:
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 px  = TEXTURE_PIXEL_SIZE;
+	vec4 base = texture(TEXTURE, UV);
+	if (base.a > 0.01) { COLOR = base; return; }
+	float a = texture(TEXTURE, UV + vec2(px.x, 0.0)).a
+	        + texture(TEXTURE, UV - vec2(px.x, 0.0)).a
+	        + texture(TEXTURE, UV + vec2(0.0, px.y)).a
+	        + texture(TEXTURE, UV - vec2(0.0, px.y)).a;
+	COLOR = vec4(0.06, 0.03, 0.0, clamp(a, 0.0, 1.0));
+}
+"""
+	var mat = ShaderMaterial.new()
+	mat.shader = shader
+	sprite.material = mat
 
 func setup():
 	enemy_type_name = "guerrier"
@@ -56,8 +96,33 @@ func _physics_process(_delta):
 		_animator.play("idle", _face_dir)
 		return
 
+	self.modulate = Color(0.6, 0.75, 1.5) if slowed else Color.WHITE
+
+	# Niv 3 — saut d'assaut
+	if diff >= 3:
+		_saut_cd = max(0.0, _saut_cd - _delta)
+		if _saut_actif:
+			velocity = _saut_dir * 380.0
+			move_and_slide()
+			var dist_s = global_position.distance_to(player.global_position) if player else 999.0
+			if dist_s < 35.0:
+				player.take_damage_from(damage, self)
+				_attack_anim_timer = 0.5
+			_saut_cd = 5.0
+			_saut_actif = false
+			return
+		elif _saut_cd <= 0.0 and player:
+			var dist_s = global_position.distance_to(player.global_position)
+			if dist_s > 80.0 and dist_s < 350.0:
+				_saut_dir = (player.global_position - global_position).normalized()
+				_saut_actif = true
+				_saut_cd = 5.0
+
 	if player:
 		var current_speed = base_speed * 0.4 if slowed else speed
+		# Niv 2 — rage sous 30% HP
+		if diff >= 2 and _en_rage:
+			current_speed = speed * 2.0
 		var direction = get_direction()
 		direction += get_separation_force()
 		direction = direction.normalized()
@@ -106,7 +171,12 @@ func get_separation_force() -> Vector2:
 	return force
 
 func take_damage(amount):
-	current_hp -= amount
+	var dmg = max(1, amount - _resistance)
+	current_hp -= dmg
+	# Niv 2 — rage activée sous 30% HP
+	if diff >= 2 and not _en_rage and current_hp <= max_hp * 0.3:
+		_en_rage = true
+		$body.modulate = Color(2.0, 0.3, 0.3)
 	_flash_hit()
 	if current_hp <= 0:
 		die()
@@ -118,6 +188,11 @@ func _flash_hit():
 		$body.modulate = body_color
 
 func die():
+	# Niv 5 — frénésie : se divise en 2 mini-guerriers
+	if diff >= 5 and not _ressuscite:
+		_ressuscite = true
+		_spawner_mini_guerriers()
+
 	var pool: BloodPool = BLOOD_POOL_SCENE.instantiate()
 	pool.global_position = global_position
 	pool.radius = body_visual_scale.x * 20.0
@@ -129,4 +204,25 @@ func die():
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud:
 		hud.ajouter_kill()
+
+	# Drop pièces ramassables
+	for _i in randi_range(3, 6):
+		var piece = PIECE_RAMASSABLE_SCENE.instantiate()
+		piece.global_position = global_position + Vector2(randf_range(-28, 28), randf_range(-20, 20))
+		get_tree().current_scene.add_child(piece)
+
 	queue_free()
+
+func _spawner_mini_guerriers() -> void:
+	for i in 2:
+		var mini = GUERRIER_SCENE.instantiate()
+		mini.diff = 0  # empêche _ready() d'écraser avec le niveau global
+		mini.global_position = global_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		get_tree().current_scene.add_child(mini)
+		# _ready() a tiré ici avec diff=0, on surcharge les stats après
+		mini.max_hp     = 20
+		mini.current_hp = 20
+		mini.speed      = speed * 1.2
+		mini.base_speed = speed * 1.2
+		mini.damage     = int(damage * 0.6)
+		mini.xp_value   = 0

@@ -15,7 +15,6 @@ var _state       := State.APPROACH
 var _state_timer := 0.0
 var _shoot_timer := 0.0
 var _burst_fired := 0
-
 func setup() -> void:
 	max_hp          = 20
 	current_hp      = 20
@@ -25,6 +24,11 @@ func setup() -> void:
 	xp_value        = 3
 	enemy_type_name = "elf"
 	body_level      = 1
+
+func _activer_competences() -> void:
+	# Niv 5 — traque : réduit la distance de retraite pour rester en pression
+	if diff >= 5:
+		pass  # géré inline dans _physics_process via diff check
 
 func _physics_process(delta: float) -> void:
 	if not player:
@@ -69,8 +73,10 @@ func _physics_process(delta: float) -> void:
 				_enter_retreat()
 
 		State.RETREAT:
+			# Niv 5 — traque : recule beaucoup moins loin
+			var reset_range = 160.0 if diff >= 5 else RANGE_RESET
 			_do_zigzag(-1.0)
-			if dist >= RANGE_RESET:
+			if dist >= reset_range:
 				_state = State.APPROACH
 				_state_timer = 0.0
 
@@ -106,9 +112,29 @@ func _fire_arrow() -> void:
 		return
 	_face_toward_player()
 	_attack_anim_timer = 0.5
-	var arrow := ARROW_SCENE.instantiate()
 	var dir: Vector2 = (player.global_position - global_position).normalized()
+
+	# Niv 4 — salve : 5 flèches en éventail
+	if diff >= 4:
+		var angles = [-0.35, -0.175, 0.0, 0.175, 0.35]
+		for a in angles:
+			_tirer_fleche(dir.rotated(a))
+		return
+
+	# Niv 2 — double tir : 2 flèches légèrement écartées
+	if diff >= 2:
+		_tirer_fleche(dir.rotated(-0.15))
+		_tirer_fleche(dir.rotated(0.15))
+		return
+
+	_tirer_fleche(dir)
+
+func _tirer_fleche(dir: Vector2) -> void:
+	var arrow := ARROW_SCENE.instantiate()
 	arrow.direction       = dir
 	arrow.global_position = global_position + dir * 20.0
 	arrow.rotation        = dir.angle()
+	# Niv 3 — flèche empoisonnée
+	if diff >= 3:
+		arrow.set("poison", true)
 	get_tree().current_scene.add_child(arrow)
