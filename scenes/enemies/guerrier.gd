@@ -173,10 +173,12 @@ func _teleporter_pres_joueur() -> void:
 	global_position = tele
 
 func get_direction() -> Vector2:
-	var to_player   = (player.global_position - global_position).normalized()
+	var to_player = (player.global_position - global_position).normalized()
+	# Si l'ennemi est déjà proche du joueur, il fonce — la limite de map ne bloque pas
+	if global_position.distance_to(player.global_position) < 200.0:
+		return to_player
 	var dist_center = global_position.length()
 	if dist_center > 640.0:
-		# Blend progressif : 0% repulsion à 640px, 100% à 680px
 		var inward = -global_position.normalized()
 		var blend  = clampf((dist_center - 640.0) / 40.0, 0.0, 1.0)
 		return to_player.lerp(inward, blend).normalized()
