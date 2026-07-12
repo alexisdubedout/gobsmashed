@@ -2,56 +2,79 @@ extends Control
 
 const BOSS_DATA = {
 	"mage": {
-		"nom":          "Grand Mage",
-		"titre":        "Archimage des Profondeurs",
+		"nom":          "Nadège la Ténébreuse",
+		"titre":        "Lanceuse de Sorts (En Formation)",
 		"couleur":      Color("#7755ee"),
 		"couleur_sombre": Color("#100820"),
 		"couleur_accent": Color("#bbaaff"),
-		"dialogue":     "Tu oses te présenter devant moi ?\nJe vais t'enseigner ce qu'est\nla vraie puissance...\nTa mort sera instructive.",
-		"texture":      "res://assets/characters/Mage.png",
+		"dialogues": [
+			"J'ai appris 47 sorts.\nJ'en connais encore 3 par cœur.\nMais les 3 bons.\nEnfin... à peu près.",
+			"Mon bâton est enchanté.\nBon, je l'ai enchanté moi-même hier.\nLe résultat est en cours.\nMais t'as vu l'intention.",
+			"Le chef a dit 'amène quelqu'un de magique'.\nIl pensait à quelqu'un d'autre.\nMais j'étais là.\nMoi aussi je peux être magique.",
+			"J'ai failli transformer une chaise en grenouille.\nElle a juste... bougé un peu.\nMais dans le bon sens.\nC'est déjà quelque chose.",
+			"Je suis là pour le savoir.\nPas pour l'or du gobelin.\nBon l'or aussi.\nSurtout l'or en fait.",
+		],
 	},
 	"guerrier": {
-		"nom":          "Guerrier Légendaire",
-		"titre":        "Titan de l'Arène Maudite",
+		"nom":          "Grug le Magnifique",
+		"titre":        "Légende Vivante (Selon Lui-Même)",
 		"couleur":      Color("#cc3322"),
 		"couleur_sombre": Color("#1e0606"),
 		"couleur_accent": Color("#ff8877"),
-		"dialogue":     "Enfin un adversaire !\nÇa fait trop longtemps que\nje n'ai pas senti le goût du sang.\nViens... souffrir.",
-		"texture":      "res://assets/characters/Guerrier.png",
+		"dialogues": [
+			"On m'appelle l'Invincible.\nBon, j'ai perdu une fois.\nMais il m'avait mordu en premier.\nToi tu vas juste perdre.",
+			"Mon épée a un nom.\nElle s'appelle Destructor.\nC'est moi qui l'ai trouvé.\nJe suis aussi très intelligent.",
+			"J'ai combattu des dragons !\nBon, c'était un lézard.\nMais il était ÉNORME.\nToi t'es même pas un lézard.",
+			"J'avais pas peur.\nJ'avais juste quelque chose dans l'œil.\nLes deux yeux. En même temps.\nAllez, viens qu'on en finisse.",
+			"Le chef m'a dit de garder l'entrée.\nMais l'entrée c'était ennuyeux.\nAlors je suis entré quand même.\nC'est pareil en mieux.",
+		],
 	},
 	"paladin": {
-		"nom":          "Paladin Maudit",
-		"titre":        "Lame de la Lumière Noire",
+		"nom":          "Régis le Sanctifié",
+		"titre":        "Serviteur de la Lumière (Bénévole)",
 		"couleur":      Color("#bb9900"),
 		"couleur_sombre": Color("#1a1400"),
 		"couleur_accent": Color("#ffdd55"),
-		"dialogue":     "La lumière divine\nne tolère pas ton insolence.\nTu as cherché ton jugement...\ntu l'as trouvé.",
-		"texture":      "res://assets/characters/Paladin.png",
+		"dialogues": [
+			"La lumière divine guide mes pas.\nBon, surtout à gauche.\nMais elle essaie.\nToi aussi tu devrais essayer.",
+			"Mon bouclier est béni par les dieux.\nJe l'ai béni moi-même ce matin.\nAvec de l'eau du robinet.\nÇa compte quand même.",
+			"Le chef a dit qu'on ne volait pas.\nOn 'emprunte pour une juste cause'.\nLa juste cause c'est nos salaires.\nOn est bénévoles en fait.",
+			"J'ai prié pendant une heure avant de venir.\nLes dieux n'ont pas vraiment répondu.\nMais ils n'ont pas dit non non plus.\nC'est forcément un signe.",
+			"Je fais ça pour le bien supérieur.\nPas pour le trésor du gobelin.\nBon, le trésor aussi.\nC'est pour une bonne cause. La mienne.",
+		],
 	},
 	"elf": {
-		"nom":          "Elfe Fantôme",
-		"titre":        "Chasseuse des Ombres Éternelles",
+		"nom":          "Sylvara l'Insaisissable",
+		"titre":        "Elfe Supérieure (Objectivement)",
 		"couleur":      Color("#228855"),
 		"couleur_sombre": Color("#05150a"),
 		"couleur_accent": Color("#55ffaa"),
-		"dialogue":     "Tu es rapide...\npour un gobelin.\nMais personne ne m'a jamais rattrapée.\nPersonne ne le fera jamais.",
-		"texture":      "res://assets/characters/Elf.png",
+		"dialogues": [
+			"Je vis depuis 500 ans.\nJ'ai vu des empires s'effondrer.\nMais jamais un gobelin me battre.\nC'est mon premier vrai combat.",
+			"Les elfes sont supérieurs.\nC'est pas de l'arrogance, c'est biologique.\nLe chef a dit d'arrêter de le répéter.\nJe vois pas pourquoi.",
+			"Mon arc vient des forêts ancestrales.\nBon, je l'ai acheté à la guilde.\nMais le bois vient peut-être d'une forêt.\nC'est l'intention qui compte.",
+			"Personne ne m'a jamais rattrapée.\nUne fois j'ai trébuché.\nMais c'était fait exprès.\nPour déstabiliser l'ennemi.",
+			"Je suis là pour l'expérience.\nPas pour voler un gobelin.\nBon, un peu pour voler le gobelin.\nL'expérience de voler un gobelin.",
+		],
 	},
 }
 
-var _sprite_ref: Sprite2D = null
+var _sprite_ref: AnimatedSprite2D = null
 var _text_label: RichTextLabel = null
+var _rot_icon: Label = null
 var _anim_timer: float = 0.0
 var _chars_shown: float = 0.0
 
 func _enter_tree():
-	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
-	get_window().content_scale_size = Vector2i(720, 405)
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
+	get_window().content_scale_size = Vector2i(405, 720)
 
 func _ready():
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await get_tree().process_frame
 	_build_ui()
+	if is_instance_valid(_sprite_ref):
+		_sprite_ref.play("idle_down")
 
 func _build_ui():
 	var data = BOSS_DATA.get(GameState.boss_type, BOSS_DATA["mage"])
@@ -62,143 +85,122 @@ func _build_ui():
 	bg.color = Color("#050309")
 	add_child(bg)
 
-	# Lueur colorée sur la partie gauche (zone portrait)
-	var wash = ColorRect.new()
-	wash.color = data["couleur"]
-	wash.color.a = 0.08
-	wash.anchor_left = 0.0
-	wash.anchor_right = 0.0
-	wash.anchor_top = 0.0
-	wash.anchor_bottom = 1.0
-	wash.offset_right = 225
-	add_child(wash)
+	# Layout vertical portrait
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 0)
+	add_child(vbox)
 
-	# Layout principal horizontal
-	var hbox = HBoxContainer.new()
-	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hbox.add_theme_constant_override("separation", 0)
-	add_child(hbox)
-
-	var portrait = _creer_portrait(data)
-	portrait.custom_minimum_size.x = 210
-	portrait.size_flags_horizontal = 0  # SIZE_SHRINK_BEGIN — largeur fixe
-	portrait.size_flags_vertical   = Control.SIZE_EXPAND_FILL
-	hbox.add_child(portrait)
+	var header = _creer_header(data)
+	header.custom_minimum_size.y = 240
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(header)
 
 	var dialogue = _creer_dialogue(data)
 	dialogue.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dialogue.size_flags_vertical   = Control.SIZE_EXPAND_FILL
-	hbox.add_child(dialogue)
+	vbox.add_child(dialogue)
 
-# ── Portrait ────────────────────────────────────────────────────────────────
+# ── Header (portrait + nom côte à côte) ─────────────────────────────────────
 
-func _creer_portrait(data: Dictionary) -> Control:
+func _creer_header(data: Dictionary) -> Control:
 	var wrapper = Control.new()
 
-	# Arrière-plan lumineux (couleur boss, voile)
 	var glow = ColorRect.new()
 	glow.color = data["couleur"]
-	glow.color.a = 0.22
+	glow.color.a = 0.12
 	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	wrapper.add_child(glow)
 
-	# Cadre principal du portrait (Panel pour pouvoir avoir plusieurs enfants)
-	var frame = Panel.new()
-	frame.anchor_left   = 0.0
-	frame.anchor_right  = 1.0
-	frame.anchor_top    = 0.0
-	frame.anchor_bottom = 1.0
-	frame.offset_left   = 5
-	frame.offset_right  = -5
-	frame.offset_top    = 6
-	frame.offset_bottom = -6
-	var frame_style = StyleBoxFlat.new()
-	frame_style.bg_color        = data["couleur_sombre"]
-	frame_style.border_color    = data["couleur"]
-	frame_style.set_border_width_all(3)
-	frame_style.set_corner_radius_all(2)
-	frame.add_theme_stylebox_override("panel", frame_style)
-	wrapper.add_child(frame)
+	var hbox = HBoxContainer.new()
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hbox.add_theme_constant_override("separation", 0)
+	wrapper.add_child(hbox)
 
-	# Double bordure intérieure (ligne fine accent)
-	var inner_line = Panel.new()
-	inner_line.anchor_left   = 0.0
-	inner_line.anchor_right  = 1.0
-	inner_line.anchor_top    = 0.0
-	inner_line.anchor_bottom = 1.0
-	inner_line.offset_left   = 8
-	inner_line.offset_right  = -8
-	inner_line.offset_top    = 8
-	inner_line.offset_bottom = -8
-	var inner_style = StyleBoxFlat.new()
-	inner_style.bg_color     = Color(0, 0, 0, 0)
-	inner_style.border_color = data["couleur"]
-	inner_style.border_color.a = 0.35
-	inner_style.set_border_width_all(1)
-	frame.add_child(inner_line)
-
-	# Contenu : sprite + nom
-	var vbox = VBoxContainer.new()
-	vbox.anchor_left   = 0.0
-	vbox.anchor_right  = 1.0
-	vbox.anchor_top    = 0.0
-	vbox.anchor_bottom = 1.0
-	vbox.offset_left   = 12
-	vbox.offset_right  = -12
-	vbox.offset_top    = 14
-	vbox.offset_bottom = -14
-	vbox.add_theme_constant_override("separation", 6)
-	frame.add_child(vbox)
-
-	# Zone sprite (SubViewport pour animation)
+	# Zone sprite (SubViewport)
 	var svc = SubViewportContainer.new()
-	svc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	svc.custom_minimum_size.x = 160
+	svc.size_flags_horizontal = 0
+	svc.size_flags_vertical   = Control.SIZE_EXPAND_FILL
 	svc.stretch = true
-	vbox.add_child(svc)
+	hbox.add_child(svc)
 
 	var sv = SubViewport.new()
-	sv.size = Vector2i(160, 290)
+	sv.size = Vector2i(160, 240)
 	sv.transparent_bg = true
 	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	svc.add_child(sv)
 
-	var sprite = Sprite2D.new()
-	sprite.texture = load(data["texture"])
-	sprite.hframes = 8
-	sprite.vframes = 4
-	sprite.position = Vector2(80, 130)
-	sprite.scale    = Vector2(4.2, 4.2)
+	var sprite = AnimatedSprite2D.new()
+	var tres := "res://assets/sprites/placeholder/body_%s_level_%d_frames.tres" % [GameState.boss_type, GameState.boss_level]
+	if ResourceLoader.exists(tres):
+		sprite.sprite_frames = load(tres)
+	sprite.position = Vector2(80, 110)
+	sprite.scale    = Vector2(3.5, 3.5)
 	sv.add_child(sprite)
 	_sprite_ref = sprite
 
-	# Voile atmosphérique sur le sprite
-	var atmo = ColorRect.new()
-	atmo.color  = data["couleur"]
-	atmo.color.a = 0.10
-	atmo.size   = Vector2(160, 290)
-	sv.add_child(atmo)
-
-	# Vignette basse (dégradé du bas vers le haut, sombre)
 	var vign = ColorRect.new()
-	vign.color  = data["couleur_sombre"]
-	vign.color.a = 0.55
-	vign.position = Vector2(0, 200)
-	vign.size   = Vector2(160, 90)
+	vign.color    = data["couleur_sombre"]
+	vign.color.a  = 0.45
+	vign.position = Vector2(0, 170)
+	vign.size     = Vector2(160, 70)
 	sv.add_child(vign)
 
-	# Nom du boss (sous le portrait)
-	var nom_lbl = Label.new()
-	nom_lbl.text = data["nom"].to_upper()
-	nom_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nom_lbl.add_theme_font_size_override("font_size", 10)
-	nom_lbl.add_theme_color_override("font_color", data["couleur_accent"])
-	nom_lbl.add_theme_color_override("font_shadow_color", Color("#000000", 0.9))
-	nom_lbl.add_theme_constant_override("shadow_offset_x", 1)
-	nom_lbl.add_theme_constant_override("shadow_offset_y", 1)
-	vbox.add_child(nom_lbl)
+	# Infos boss (nom + titre)
+	var info = VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.size_flags_vertical   = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 8)
+	var info_style = StyleBoxFlat.new()
+	info_style.bg_color       = data["couleur_sombre"]
+	info_style.border_color   = data["couleur"]
+	info_style.set_border_width_all(2)
+	info.add_theme_stylebox_override("panel", info_style)
+	hbox.add_child(info)
 
-	# Ornements de coin (diamonds ◆)
-	_ajouter_ornements_coin(frame, data["couleur"])
+	var spacer_top = Control.new()
+	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info.add_child(spacer_top)
+
+	var titre_lbl = Label.new()
+	titre_lbl.text = data["titre"].to_upper()
+	titre_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	titre_lbl.add_theme_font_size_override("font_size", 14)
+	titre_lbl.add_theme_color_override("font_color", data["couleur"])
+	titre_lbl.offset_left = 14
+	info.add_child(titre_lbl)
+
+	var nom_lbl = Label.new()
+	nom_lbl.text = data["nom"]
+	nom_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nom_lbl.add_theme_font_size_override("font_size", 28)
+	nom_lbl.add_theme_color_override("font_color", Color("#ede0c4"))
+	nom_lbl.add_theme_color_override("font_shadow_color", data["couleur"])
+	nom_lbl.add_theme_constant_override("shadow_offset_x", 2)
+	nom_lbl.add_theme_constant_override("shadow_offset_y", 2)
+	nom_lbl.offset_left = 14
+	info.add_child(nom_lbl)
+
+	var div = ColorRect.new()
+	div.color = data["couleur"]
+	div.color.a = 0.5
+	div.custom_minimum_size = Vector2(0, 2)
+	div.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_child(div)
+
+	var type_str = GameState.boss_type.capitalize()
+	var meta_lbl = Label.new()
+	meta_lbl.text = "%s  •  Niveau %d" % [type_str, GameState.boss_level]
+	meta_lbl.add_theme_font_size_override("font_size", 14)
+	meta_lbl.add_theme_color_override("font_color", data["couleur_accent"])
+	meta_lbl.modulate = Color(1, 1, 1, 0.65)
+	meta_lbl.offset_left = 14
+	info.add_child(meta_lbl)
+
+	var spacer_bot = Control.new()
+	spacer_bot.custom_minimum_size.y = 6
+	info.add_child(spacer_bot)
 
 	return wrapper
 
@@ -240,46 +242,24 @@ func _creer_dialogue(data: Dictionary) -> Control:
 	vbox.anchor_right  = 1.0
 	vbox.anchor_top    = 0.0
 	vbox.anchor_bottom = 1.0
-	vbox.offset_left   = 26
-	vbox.offset_right  = -26
-	vbox.offset_top    = 22
-	vbox.offset_bottom = -22
-	vbox.add_theme_constant_override("separation", 10)
+	vbox.offset_left   = 20
+	vbox.offset_right  = -20
+	vbox.offset_top    = 18
+	vbox.offset_bottom = -14
+	vbox.add_theme_constant_override("separation", 12)
 	outer.add_child(vbox)
-
-	# Sous-titre (rôle du boss)
-	var role_lbl = Label.new()
-	var role_color = data["couleur"]
-	role_color.a = 0.70
-	role_lbl.text = data["titre"].to_upper()
-	role_lbl.add_theme_font_size_override("font_size", 10)
-	role_lbl.add_theme_color_override("font_color", role_color)
-	vbox.add_child(role_lbl)
-
-	# Nom du boss (grand)
-	var nom_lbl = Label.new()
-	nom_lbl.text = data["nom"]
-	nom_lbl.add_theme_font_size_override("font_size", 22)
-	nom_lbl.add_theme_color_override("font_color", Color("#ede0c4"))
-	nom_lbl.add_theme_color_override("font_shadow_color", data["couleur"])
-	nom_lbl.add_theme_constant_override("shadow_offset_x", 2)
-	nom_lbl.add_theme_constant_override("shadow_offset_y", 2)
-	vbox.add_child(nom_lbl)
-
-	# Ligne de séparation colorée
-	var div = ColorRect.new()
-	div.color = data["couleur"]
-	div.color.a = 0.60
-	div.custom_minimum_size = Vector2(0, 2)
-	div.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_child(div)
 
 	# Texte du boss (effet machine à écrire)
 	var rtl = RichTextLabel.new()
+	var dialogue: String
+	if data.has("dialogues"):
+		dialogue = data["dialogues"][randi() % data["dialogues"].size()]
+	else:
+		dialogue = data["dialogue"]
 	rtl.bbcode_enabled = true
 	rtl.scroll_active  = false
-	rtl.text = "[color=#ccbbaa][i]" + data["dialogue"] + "[/i][/color]"
-	rtl.add_theme_font_size_override("normal_font_size", 16)
+	rtl.text = "[color=#ccbbaa][i]" + dialogue + "[/i][/color]"
+	rtl.add_theme_font_size_override("normal_font_size", 20)
 	rtl.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rtl.visible_characters  = 0
 	vbox.add_child(rtl)
@@ -299,7 +279,7 @@ func _creer_dialogue(data: Dictionary) -> Control:
 
 	var ctrl_title = Label.new()
 	ctrl_title.text = "CONTRÔLES"
-	ctrl_title.add_theme_font_size_override("font_size", 9)
+	ctrl_title.add_theme_font_size_override("font_size", 12)
 	ctrl_title.add_theme_color_override("font_color", data["couleur"])
 	ctrl_title.modulate = Color(1, 1, 1, 0.65)
 	ctrl_wrap.add_child(ctrl_title)
@@ -314,32 +294,48 @@ func _creer_dialogue(data: Dictionary) -> Control:
 
 		var key_lbl = Label.new()
 		key_lbl.text = hint[0]
-		key_lbl.custom_minimum_size.x = 150
-		key_lbl.add_theme_font_size_override("font_size", 11)
+		key_lbl.custom_minimum_size.x = 170
+		key_lbl.add_theme_font_size_override("font_size", 14)
 		key_lbl.add_theme_color_override("font_color", data["couleur_accent"])
 		row.add_child(key_lbl)
 
 		var arrow_lbl = Label.new()
 		arrow_lbl.text = "→"
-		arrow_lbl.add_theme_font_size_override("font_size", 11)
+		arrow_lbl.add_theme_font_size_override("font_size", 14)
 		arrow_lbl.add_theme_color_override("font_color", data["couleur"])
 		row.add_child(arrow_lbl)
 
 		var desc_lbl = Label.new()
 		desc_lbl.text = hint[1]
-		desc_lbl.add_theme_font_size_override("font_size", 11)
+		desc_lbl.add_theme_font_size_override("font_size", 14)
 		desc_lbl.add_theme_color_override("font_color", Color("#998877"))
 		row.add_child(desc_lbl)
 
-	var spacer = Control.new()
-	spacer.custom_minimum_size.y = 4
-	vbox.add_child(spacer)
+	# Indicateur rotation
+	var rot_wrap = HBoxContainer.new()
+	rot_wrap.alignment = BoxContainer.ALIGNMENT_CENTER
+	rot_wrap.add_theme_constant_override("separation", 8)
+	vbox.add_child(rot_wrap)
+
+	var rot_icon = Label.new()
+	rot_icon.text = "↻"
+	rot_icon.add_theme_font_size_override("font_size", 28)
+	rot_icon.add_theme_color_override("font_color", data["couleur_accent"])
+	rot_wrap.add_child(rot_icon)
+	_rot_icon = rot_icon
+
+	var rot_lbl = Label.new()
+	rot_lbl.text = "Tournez votre téléphone\npour le combat"
+	rot_lbl.add_theme_font_size_override("font_size", 15)
+	rot_lbl.add_theme_color_override("font_color", data["couleur_accent"])
+	rot_lbl.modulate = Color(1, 1, 1, 0.75)
+	rot_wrap.add_child(rot_lbl)
 
 	# Bouton PRÊT AU COMBAT
 	var btn = Button.new()
 	btn.text = "⚔   ENTRER DANS L'ARÈNE"
 	btn.custom_minimum_size = Vector2(0, 46)
-	btn.add_theme_font_size_override("font_size", 15)
+	btn.add_theme_font_size_override("font_size", 18)
 	var bs_n = StyleBoxFlat.new()
 	bs_n.bg_color     = data["couleur"].darkened(0.40)
 	bs_n.border_color = data["couleur"]
@@ -366,9 +362,10 @@ func _creer_dialogue(data: Dictionary) -> Control:
 func _process(delta: float):
 	_anim_timer += delta
 
-	# Animation du sprite du boss
-	if is_instance_valid(_sprite_ref):
-		_sprite_ref.frame = int(_anim_timer * 7.0) % 8
+	# Rotation icône téléphone
+	if is_instance_valid(_rot_icon):
+		_rot_icon.pivot_offset = _rot_icon.size / 2.0
+		_rot_icon.rotation += delta * 2.2
 
 	# Effet machine à écrire
 	if is_instance_valid(_text_label):

@@ -96,6 +96,12 @@ func _ready():
 
 # ── Physique ───────────────────────────────────────────────────
 
+func _input(event: InputEvent):
+	if not OS.is_debug_build(): return
+	var key := event as InputEventKey
+	if key and key.pressed and key.keycode == KEY_F10:
+		_mourir()
+
 func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
@@ -744,15 +750,19 @@ func _mourir():
 	if is_instance_valid(scene) and scene.has_method("on_boss_death"):
 		scene.on_boss_death(global_position)
 
+	# Freeze frame avant dissolution
+	await get_tree().create_timer(0.35).timeout
+	if not is_instance_valid(self): return
+
 	# Expansion + dissolve dramatique
 	var body_spr := $body as AnimatedSprite2D
 	body_spr.stop()
 	var tw := body_spr.create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(body_spr, "scale",      Vector2(3.2, 3.2), 0.9).set_ease(Tween.EASE_OUT)
-	tw.tween_property(body_spr, "modulate",   Color(2.5, 1.8, 0.3, 0.0), 0.85).set_ease(Tween.EASE_IN)
+	tw.tween_property(body_spr, "scale",    Vector2(3.8, 3.8), 1.4).set_ease(Tween.EASE_OUT)
+	tw.tween_property(body_spr, "modulate", Color(2.5, 1.8, 0.3, 0.0), 1.3).set_ease(Tween.EASE_IN)
 	tw.set_parallel(false)
-	tw.tween_interval(0.3)
+	tw.tween_interval(0.7)
 
 	await tw.finished
 	if not is_instance_valid(self): return

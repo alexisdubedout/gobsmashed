@@ -28,6 +28,9 @@ window/size/borderless=true
 window/stretch/mode="canvas_items"
 window/handheld/orientation=1
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/LPCAnimatedSprite/plugin.cfg", "res://addons/lpc_creator/plugin.cfg")
 
 [input]
 

@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://scenes/boss_fight/boss_platformer.gd" id="1"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_boss_pf"]
-radius = 16.0
-height = 48.0
+radius = 13.0
+height = 36.0
 
 [node name="BossPlatformer" type="CharacterBody2D" groups=["enemy"]]
 collision_layer = 4

@@ -4,6 +4,7 @@ const AUGMENTS = Augments.LISTE
 var player
 
 func _ready():
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	player = get_tree().get_first_node_in_group("player")
 	visible = false
 

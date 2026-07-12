@@ -4,8 +4,8 @@
 [ext_resource type="Texture2D" path="res://assets/characters/Gobelin.png" id="2"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
-radius = 11.0
-height = 26.0
+radius = 9.0
+height = 20.0
 
 [node name="PlayerPlatformer" type="CharacterBody2D" groups=["player"]]
 collision_layer = 8

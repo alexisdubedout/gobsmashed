@@ -2,6 +2,9 @@
 .godot/
 /android/
 
+# Sprites ULPC source (141k fichiers, pas à versionner)
+tools/lpc_creator/ulpc/spritesheets/
+
 # Exports web (générés, pas à versionner)
 *.wasm
 *.pck
