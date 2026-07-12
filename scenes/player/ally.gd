@@ -1,4 +1,4 @@
-extends CharacterBody2D
+﻿extends CharacterBody2D
 
 const SPEED = 120.0
 const ATTACK_DELAY = 1.2
@@ -13,8 +13,7 @@ func _ready():
 func _physics_process(_delta):
 	if not player:
 		return
-	
-	# Suit le joueur à distance
+
 	var dist_player = global_position.distance_to(player.global_position)
 	if dist_player > 80:
 		var direction = (player.global_position - global_position).normalized()
@@ -22,11 +21,14 @@ func _physics_process(_delta):
 	else:
 		velocity = Vector2.ZERO
 	move_and_slide()
-	
-	# Tire sur l'ennemi le plus proche
+
 	attack_timer += _delta
-	var current_delay = ATTACK_DELAY * (0.55 if player.ally_fast else 1.0)
-	if attack_timer >= current_delay:
+	var af = player.allies_fervents
+	var speed_mult = 1.0
+	if player.ally_fast or af >= 1: speed_mult = 0.7
+	if af >= 2: speed_mult = 0.5
+	if af >= 3: speed_mult = 0.3
+	if attack_timer >= ATTACK_DELAY * speed_mult:
 		attack_timer = 0.0
 		shoot()
 
@@ -43,8 +45,19 @@ func shoot():
 			closest = enemy
 	if closest == null:
 		return
+	_tirer_vers(closest.global_position)
+
+func _tirer_vers(target_pos: Vector2) -> void:
 	var coin = COIN_SCENE.instantiate()
-	var direction = (closest.global_position - global_position).normalized()
-	coin.global_position = global_position + direction * 30.0
-	coin.direction = direction
+	var dir = (target_pos - global_position).normalized()
+	coin.global_position = global_position + dir * 30.0
+	coin.direction = dir
+	# Dégâts : base 15 + rage joueur + bonus alliés fervents
+	var af = player.allies_fervents if player else 0
+	var rage = player.rage_niveau if player else 0
+	coin.damage = int((15 + rage * 3 + (5 if af >= 2 else 0)) * 1.0)
+	# Héritage pierce/bounce (Alliés fervents stack 3)
+	if af >= 3:
+		coin.can_pierce = player.coin_pierce
+		coin.can_bounce = player.coin_bounce
 	get_tree().current_scene.add_child(coin)

@@ -18,9 +18,9 @@ var _burst_fired := 0
 func setup() -> void:
 	max_hp          = 20
 	current_hp      = 20
-	speed           = 160.0
-	base_speed      = 160.0
-	damage          = 6
+	speed           = 170.0
+	base_speed      = 170.0
+	damage          = 7
 	xp_value        = 3
 	enemy_type_name = "elf"
 	body_level      = 1
@@ -79,6 +79,14 @@ func _physics_process(delta: float) -> void:
 			if dist >= reset_range:
 				_state = State.APPROACH
 				_state_timer = 0.0
+
+	_pos_check_timer += delta
+	if _pos_check_timer >= 3.0:
+		var moved = global_position.distance_to(_last_check_pos)
+		if (moved < 25.0 and dist > 300.0) or (dist > 520.0 and moved < 40.0):
+			_teleporter_pres_joueur()
+		_last_check_pos  = global_position
+		_pos_check_timer = 0.0
 
 
 func _enter_retreat() -> void:

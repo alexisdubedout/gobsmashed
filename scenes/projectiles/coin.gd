@@ -1,4 +1,4 @@
-extends Area2D
+﻿extends Area2D
 
 var speed = 280.0
 var damage = 15
@@ -84,8 +84,18 @@ func _physics_process(_delta):
 				continue
 			var dist = global_position.distance_to(enemy.global_position)
 			if dist < hit_radius:
-				enemy.take_damage(damage)
 				var _p = get_tree().get_first_node_in_group("player")
+				# Frappe critique
+				var _crit_chance = _p.get("crit_chance") if _p else null
+				var _crit = _crit_chance != null and randf() < _crit_chance
+				var _dmg_final = damage * (2 if _crit else 1)
+				enemy.take_damage(_dmg_final)
+				if _crit:
+					_texte_flottant("CRIT! " + str(_dmg_final), enemy.global_position, Color("#ff3300"), 19)
+					if _crit_chance != null and _crit_chance >= 0.35:
+						_exploser(enemy, 1)
+				else:
+					_texte_flottant(str(_dmg_final), enemy.global_position, Color("#ffe566"), 16)
 				if _p:
 					var _drain = _p.get("drain_niveau")
 					if _drain != null and _drain > 0:
@@ -94,6 +104,11 @@ func _physics_process(_delta):
 					var _explo = _p.get("explosion_niveau")
 					if _explo != null and _explo > 0:
 						_exploser(enemy, _explo)
+					# Pièces empoisonnées
+					var _pe_val = _p.get("pieces_empoisonnees")
+					var _pe: int = _pe_val if _pe_val != null else 0
+					if _pe > 0:
+						_appliquer_poison_ennemi(enemy, _pe)
 				if piece_lourde_niveau >= 1:
 					enemy.slowed = true
 					var slow_dur: float = 1.5 + float(piece_lourde_niveau - 1)
@@ -136,20 +151,35 @@ func _exploser(source: Node, niveau: int):
 		if e == source: continue
 		if global_position.distance_to(e.global_position) < rayon:
 			e.take_damage(dmg_aoe)
+			_texte_flottant(str(dmg_aoe), e.global_position, Color("#ff8c42"), 13)
 			if niveau >= 3:
 				e.set("slowed", true)
 
-func _texte_flottant(texte: String, pos: Vector2, couleur: Color) -> void:
+func _appliquer_poison_ennemi(enemy: Node, niveau: int) -> void:
+	var dmgs = [2, 3, 4]
+	var durs = [2.0, 3.0, 4.0]
+	var dmg_dot = dmgs[niveau - 1]
+	var duree   = durs[niveau - 1]
+	for i in int(duree):
+		await get_tree().create_timer(1.0).timeout
+		if not is_instance_valid(enemy): return
+		enemy.take_damage(dmg_dot)
+	if niveau >= 3 and is_instance_valid(enemy):
+		enemy.set("slowed", true)
+		await get_tree().create_timer(2.0).timeout
+		if is_instance_valid(enemy): enemy.set("slowed", false)
+
+func _texte_flottant(texte: String, pos: Vector2, couleur: Color, font_size: int = 14) -> void:
 	var lbl = Label.new()
 	lbl.text = texte
-	lbl.add_theme_font_size_override("font_size", 14)
+	lbl.add_theme_font_size_override("font_size", font_size)
 	lbl.add_theme_color_override("font_color", couleur)
-	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
 	lbl.add_theme_constant_override("shadow_offset_x", 1)
 	lbl.add_theme_constant_override("shadow_offset_y", 1)
-	lbl.position = pos + Vector2(-10, -40)
+	lbl.position = pos + Vector2(randf_range(-18, 18), -28)
 	get_tree().current_scene.add_child(lbl)
 	var tw = lbl.create_tween()
-	tw.tween_property(lbl, "position:y", lbl.position.y - 40, 0.7).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.7)
+	tw.tween_property(lbl, "position:y", lbl.position.y - 36, 0.65).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.65).set_trans(Tween.TRANS_QUAD)
 	tw.tween_callback(lbl.queue_free)

@@ -9,9 +9,9 @@ const SPRITES_PATH := "res://assets/sprites/placeholder/"
 
 var max_hp    = 40
 var current_hp = 40
-var speed     = 165.0
-var base_speed = 165.0
-var damage    = 8
+var speed     = 175.0
+var base_speed = 175.0
+var damage    = 9
 var xp_value  = 3
 
 var player
@@ -26,6 +26,9 @@ var body_color        := Color.WHITE
 var _animator: CharacterAnimator
 var _face_dir := "down"
 var _attack_anim_timer := 0.0
+var _stuck_timer:     float   = 0.0
+var _pos_check_timer: float   = 0.0
+var _last_check_pos:  Vector2 = Vector2.ZERO
 
 # Skills niveau difficulté (cumulatifs)
 var diff: int = 1
@@ -124,19 +127,60 @@ func _physics_process(_delta):
 		if diff >= 2 and _en_rage:
 			current_speed = speed * 2.0
 		var direction = get_direction()
-		direction += get_separation_force()
-		direction = direction.normalized()
+		direction = (direction + get_separation_force()).normalized()
 		animate(direction, _delta)
-		velocity = direction * current_speed
+		velocity = velocity.lerp(direction * current_speed, min(1.0, _delta * 10.0))
 		move_and_slide()
+
+		# Unstuck : seulement contre les murs/tuiles (pas les autres ennemis)
+		var wall_hits = 0
+		for i in get_slide_collision_count():
+			var col = get_slide_collision(i)
+			if col and not col.get_collider().is_in_group("enemy") and not col.get_collider().is_in_group("player"):
+				wall_hits += 1
+		if wall_hits > 0:
+			_stuck_timer += _delta
+			if _stuck_timer > 0.25:
+				_stuck_timer = 0.0
+				var sign = 1.0 if randf() > 0.5 else -1.0
+				velocity = direction.rotated(sign * randf_range(0.5, 1.1)) * current_speed * 1.2
+				move_and_slide()
+		else:
+			_stuck_timer = 0.0
 
 		var dist = global_position.distance_to(player.global_position)
 		if dist < 35.0:
 			player.take_damage_from(damage, self)
 			_attack_anim_timer = 0.5
 
+	# Téléportation de secours
+	_pos_check_timer += _delta
+	if _pos_check_timer >= 3.0:
+		if player:
+			var moved      = global_position.distance_to(_last_check_pos)
+			var dist_player = global_position.distance_to(player.global_position)
+			if (moved < 25.0 and dist_player > 300.0) or (dist_player > 520.0 and moved < 40.0):
+				_teleporter_pres_joueur()
+		_last_check_pos  = global_position
+		_pos_check_timer = 0.0
+
+func _teleporter_pres_joueur() -> void:
+	var angle = randf() * TAU
+	var rayon = randf_range(380.0, 460.0)
+	var tele  = player.global_position + Vector2(cos(angle), sin(angle)) * rayon
+	if tele.length() > 640.0:
+		tele = tele.normalized() * 630.0
+	global_position = tele
+
 func get_direction() -> Vector2:
-	return (player.global_position - global_position).normalized()
+	var to_player   = (player.global_position - global_position).normalized()
+	var dist_center = global_position.length()
+	if dist_center > 640.0:
+		# Blend progressif : 0% repulsion à 640px, 100% à 680px
+		var inward = -global_position.normalized()
+		var blend  = clampf((dist_center - 640.0) / 40.0, 0.0, 1.0)
+		return to_player.lerp(inward, blend).normalized()
+	return to_player
 
 func animate(direction: Vector2, _delta: float):
 	if _attack_anim_timer > 0.0 and player:
@@ -147,9 +191,10 @@ func animate(direction: Vector2, _delta: float):
 			_face_dir = "down" if to_player.y > 0 else "up"
 		_animator.play("attack", _face_dir)
 		return
-	if abs(direction.x) > abs(direction.y):
+	# Hysteresis : ne change d'axe que si un composant est clairement dominant
+	if abs(direction.x) > abs(direction.y) + 0.2:
 		_face_dir = "right" if direction.x > 0 else "left"
-	else:
+	elif abs(direction.y) > abs(direction.x) + 0.2:
 		_face_dir = "down" if direction.y > 0 else "up"
 	_animator.play("run", _face_dir)
 
@@ -160,14 +205,14 @@ func get_separation_force() -> Vector2:
 		if other == self:
 			continue
 		var dist = global_position.distance_to(other.global_position)
-		if dist < 40.0:
+		if dist < 55.0:
 			var push = (global_position - other.global_position).normalized()
-			force += push * (40.0 - dist) / 40.0
+			force += push * (55.0 - dist) / 55.0 * 1.6
 	if player:
 		var dist_player = global_position.distance_to(player.global_position)
-		if dist_player < 35.0:
+		if dist_player < 38.0:
 			var push = (global_position - player.global_position).normalized()
-			force += push * 0.5
+			force += push * 0.8
 	return force
 
 func take_damage(amount):
@@ -206,7 +251,7 @@ func die():
 		hud.ajouter_kill()
 
 	# Drop pièces ramassables
-	for _i in randi_range(3, 6):
+	for _i in randi_range(2, 4):
 		var piece = PIECE_RAMASSABLE_SCENE.instantiate()
 		piece.global_position = global_position + Vector2(randf_range(-28, 28), randf_range(-20, 20))
 		get_tree().current_scene.add_child(piece)

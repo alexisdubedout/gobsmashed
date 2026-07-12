@@ -1,4 +1,4 @@
-extends CanvasLayer
+﻿extends CanvasLayer
 
 var temps = 0.0
 var ennemis_tues = 0
@@ -12,6 +12,7 @@ var _bandeau_de: Label = null
 var _bourse_label: Label = null
 var _coffre_label: Label = null
 var _coffre_bg: ColorRect = null
+var _level_label: Label = null
 
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -22,6 +23,21 @@ func _ready():
 	_creer_vignette()
 	_creer_bourse_label()
 	_creer_coffre_indicator()
+	_creer_level_label()
+
+func _creer_level_label() -> void:
+	_level_label = Label.new()
+	_level_label.text = "Niv. 1 / 15"
+	_level_label.add_theme_font_size_override("font_size", 11)
+	_level_label.add_theme_color_override("font_color", Color("#aaaaaa"))
+	_level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_level_label.add_theme_constant_override("shadow_offset_x", 1)
+	_level_label.add_theme_constant_override("shadow_offset_y", 1)
+	_level_label.offset_left   = 20
+	_level_label.offset_top    = 95
+	_level_label.offset_right  = 200
+	_level_label.offset_bottom = 112
+	add_child(_level_label)
 
 func _creer_bourse_label() -> void:
 	_bourse_label = Label.new()
@@ -164,6 +180,12 @@ func _process(delta):
 		_update_bouton_dash(player)
 		_update_bourse(player)
 		_update_coffre_indicator(player)
+		if _level_label:
+			var lv = player.level
+			var max_lv = (player.MAX_LEVEL - 1)
+			_level_label.text = "Niv. %d / %d" % [lv, max_lv]
+			_level_label.add_theme_color_override("font_color",
+				Color("#e8c84b") if lv >= max_lv else Color("#aaaaaa"))
 
 func _update_bourse(player) -> void:
 	if not _bourse_label:
