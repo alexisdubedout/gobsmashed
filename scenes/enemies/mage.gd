@@ -12,9 +12,9 @@ var _bouclier_actif: bool = false   # niv 4 : absorbe un coup
 func setup():
 	max_hp          = 25
 	current_hp      = 25
-	speed           = 95
-	base_speed      = 95
-	damage          = 8
+	speed           = 100
+	base_speed      = 100
+	damage          = 9
 	shoot_delay     = 1.8
 	xp_value        = 5
 	tele_cooldown   = randf_range(4.5, 7.0)

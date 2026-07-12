@@ -6,32 +6,32 @@ const ENEMIES = {
 	"elf":      preload("res://scenes/enemies/elf.tscn"),
 	"mage":     preload("res://scenes/enemies/mage.tscn"),
 }
-const BOSS_SCENE   = preload("res://scenes/enemies/boss.tscn")
-const COFFRE_SCENE = preload("res://scenes/world/coffre.tscn")
+const BOSS_SCENE    = preload("res://scenes/enemies/boss.tscn")
+const COFFRE_SCENE  = preload("res://scenes/world/coffre.tscn")
 const BOSS_TYPES  = ["guerrier", "paladin", "elf", "mage"]
 const ALL_CLASSES = ["guerrier", "elf", "paladin", "mage"]
 
 # 9 phases jouables — le boss arrive en "phase 10" après la dernière
 const WAVES = [
 	# Phase 1 — Guerriers
-	{"duree": 25, "mode": "solo",   "classes": ["guerrier"],                           "spawn_delay": 1.4},
+	{"duree": 25, "mode": "solo",   "classes": ["guerrier"],                           "spawn_delay": 1.0},
 	# Phase 2 — Archers
-	{"duree": 25, "mode": "solo",   "classes": ["elf"],                                "spawn_delay": 1.4},
+	{"duree": 25, "mode": "solo",   "classes": ["elf"],                                "spawn_delay": 1.0},
 	# Phase 3 — Paladins
-	{"duree": 28, "mode": "solo",   "classes": ["paladin"],                            "spawn_delay": 1.6},
+	{"duree": 28, "mode": "solo",   "classes": ["paladin"],                            "spawn_delay": 1.3},
 	# Phase 4 — Mages
-	{"duree": 25, "mode": "solo",   "classes": ["mage"],                               "spawn_delay": 1.4},
+	{"duree": 25, "mode": "solo",   "classes": ["mage"],                               "spawn_delay": 1.1},
 	# [Dé du Destin entre phase 4 et 5]
 	# Phase 5 — 2 classes aléatoires, groupes
-	{"duree": 35, "mode": "groupe", "classes": [], "nb_add": 2,                        "spawn_delay": 6.5},
+	{"duree": 35, "mode": "groupe", "classes": [], "nb_add": 2,                        "spawn_delay": 4.5},
 	# Phase 6 — +1 classe
-	{"duree": 40, "mode": "groupe", "classes": [], "nb_add": 1,                        "spawn_delay": 4.5},
+	{"duree": 40, "mode": "groupe", "classes": [], "nb_add": 1,                        "spawn_delay": 3.2},
 	# Phase 7 — +1 classe
-	{"duree": 45, "mode": "groupe", "classes": [], "nb_add": 1,                        "spawn_delay": 4.0},
+	{"duree": 45, "mode": "groupe", "classes": [], "nb_add": 1,                        "spawn_delay": 2.7},
 	# Phase 8 — Toutes les classes
-	{"duree": 50, "mode": "groupe", "classes": ["guerrier","paladin","elf","mage"],     "spawn_delay": 3.5},
+	{"duree": 50, "mode": "groupe", "classes": ["guerrier","paladin","elf","mage"],     "spawn_delay": 2.3},
 	# Phase 9 — Débordement total
-	{"duree": 60, "mode": "groupe", "classes": ["guerrier","paladin","elf","mage"],     "spawn_delay": 2.5, "spawn_delay_end": 1.5},
+	{"duree": 60, "mode": "groupe", "classes": ["guerrier","paladin","elf","mage"],     "spawn_delay": 1.7, "spawn_delay_end": 1.0},
 ]
 
 var current_wave    = 0
@@ -51,8 +51,6 @@ var boss_annonce_faite:    bool   = false
 var active_pool:  Array = []
 var wave_classes: Array = []
 
-# Distribution angulaire des spawns solos (rotation 8 secteurs)
-var _spawn_sector: int = 0
 
 # ── Debug panel ──────────────────────────────────────────
 var _dbg_type:   String = "guerrier"
@@ -68,14 +66,13 @@ func _ready():
 	wave_classes = WAVES[0]["classes"].duplicate()
 	afficher_vague()
 	_setup_atmosphere()
-	_placer_coffre()
-	if OS.is_debug_build():
-		_creer_debug_panel()
+	call_deferred("_placer_coffre")
 
 func _placer_coffre() -> void:
 	var coffre = COFFRE_SCENE.instantiate()
+	get_tree().current_scene.add_child(coffre)
 	coffre.global_position = Vector2(240, -60)
-	get_parent().add_child(coffre)
+
 
 func _creer_debug_panel() -> void:
 	var canvas = CanvasLayer.new()
@@ -295,12 +292,9 @@ func _setup_wave_classes(wave_idx: int) -> void:
 	else:
 		wave_classes = vague["classes"].duplicate()
 
-# Spawn individuel depuis les 8 secteurs en rotation
 func _spawn_solo(classes: Array) -> void:
-	_spawn_sector += 1
-	var angle = _spawn_sector * (TAU / 8.0) + randf_range(-0.3, 0.3)
-	var pos = player.global_position + Vector2(cos(angle), sin(angle)) * spawn_radius
-	pos += Vector2(randf_range(-50, 50), randf_range(-50, 50))
+	var angle = randf() * TAU
+	var pos = player.global_position + Vector2(cos(angle), sin(angle)) * (spawn_radius + randf_range(-60, 60))
 	_spawn_at(classes[randi() % classes.size()], pos)
 
 # Spawn en formation : paladins devant, guerriers flancs, elfs/mages derrière
