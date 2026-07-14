@@ -99,6 +99,7 @@ func _physics_process(_delta):
 				if _p:
 					var _drain = _p.get("drain_niveau")
 					if _drain != null and _drain > 0:
+						if _p.get("ultime_forteresse"): _drain *= 3
 						_p.current_hp = min(_p.max_hp, _p.current_hp + _drain)
 						_texte_flottant("+" + str(_drain) + "♥", _p.global_position, Color("#88ff99"))
 					var _explo = _p.get("explosion_niveau")

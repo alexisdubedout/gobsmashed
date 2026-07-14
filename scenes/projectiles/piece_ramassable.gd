@@ -1,7 +1,7 @@
 extends Node2D
 
 const EXPIRY        := 7.0
-const MAGNET_RANGE  := 130.0
+const MAGNET_RANGE  := 180.0
 
 var valeur: int = 1
 var _bob:        float = 0.0
@@ -61,7 +61,7 @@ func _process(delta):
 		if _magnetized:
 			# Accélération quadratique : rapide au contact, douce au bord
 			var t = clampf(1.0 - dist / MAGNET_RANGE, 0.0, 1.0)
-			var pull = lerp(120.0, 550.0, t * t)
+			var pull = lerp(300.0, 900.0, t * t)
 			global_position = global_position.move_toward(player.global_position, pull * delta)
 			_pos_y_init = global_position.y  # évite que le bob lutte contre le mouvement
 		if dist < 14.0:

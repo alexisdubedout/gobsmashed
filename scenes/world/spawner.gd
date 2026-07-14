@@ -34,6 +34,9 @@ const WAVES = [
 	{"duree": 60, "mode": "groupe", "classes": ["guerrier","paladin","elf","mage"],     "spawn_delay": 1.7, "spawn_delay_end": 1.0},
 ]
 
+# Nombre max d'ennemis simultanés par vague (indexé sur WAVES)
+const MAX_ENNEMIS = [8, 10, 8, 12, 16, 20, 25, 30, 38]
+
 var current_wave    = 0
 var wave_timer      = 0.0
 var spawn_timer     = 0.0
@@ -41,6 +44,7 @@ var spawn_radius    = 600.0
 var player
 var wave_active     = true
 var _wave_cooldown  = 0.0
+var _elite_spawne   = false
 
 var boss_incoming:         bool   = false
 var boss_type_pending:     String = ""
@@ -71,7 +75,7 @@ func _ready():
 func _placer_coffre() -> void:
 	var coffre = COFFRE_SCENE.instantiate()
 	get_tree().current_scene.add_child(coffre)
-	coffre.global_position = Vector2(240, -60)
+	coffre.global_position = Vector2(0, 0)
 
 
 func _creer_debug_panel() -> void:
@@ -170,6 +174,15 @@ func _creer_debug_panel() -> void:
 	btn_clear.pressed.connect(_vider_ennemis)
 	vbox.add_child(btn_clear)
 
+	var sep3 = HSeparator.new()
+	vbox.add_child(sep3)
+
+	var btn_max_skills = Button.new()
+	btn_max_skills.text = "★ Max skills"
+	btn_max_skills.add_theme_font_size_override("font_size", 11)
+	btn_max_skills.pressed.connect(_debug_max_skills)
+	vbox.add_child(btn_max_skills)
+
 func _refresh_debug_buttons(container: HBoxContainer, selected_id: String) -> void:
 	for child in container.get_children():
 		if child is Button:
@@ -197,6 +210,18 @@ func _debug_spawn_enemy() -> void:
 	# setup() dans _ready() remet body_level à 1 — on force le bon niveau après
 	enemy.body_level = _dbg_level
 	enemy._appliquer_sprite()
+
+func _debug_max_skills() -> void:
+	if not player:
+		return
+	for augment in Augments.LISTE:
+		var nom = augment["nom"]
+		var req = augment.get("requires", "")
+		if req != "" and not GameState.objets_base.get(req, false):
+			continue
+		var current = Augments.stacks.get(nom, 0)
+		for _i in (3 - current):
+			Augments.appliquer(augment, player)
 
 func _setup_atmosphere() -> void:
 	var cm = CanvasModulate.new()
@@ -251,9 +276,10 @@ func _process(delta):
 	spawn_timer += delta
 	if spawn_timer >= current_delay:
 		spawn_timer = 0.0
-		match vague["mode"]:
-			"solo":   _spawn_solo(wave_classes)
-			"groupe": _spawn_group(wave_classes)
+		if _peut_spawner():
+			match vague["mode"]:
+				"solo":   _spawn_solo(wave_classes)
+				"groupe": _spawn_group(wave_classes)
 
 	if wave_timer >= vague["duree"]:
 		wave_timer = 0.0
@@ -279,6 +305,10 @@ func next_wave():
 		_lancer_de()
 	else:
 		_transition_vague()
+	# Élite surprise à la vague 9 (index 8)
+	if current_wave == 8 and not _elite_spawne:
+		_elite_spawne = true
+		call_deferred("_spawn_elite_annonce")
 
 func _setup_wave_classes(wave_idx: int) -> void:
 	var vague = WAVES[wave_idx]
@@ -336,6 +366,9 @@ func _spawn_group(classes: Array) -> void:
 		_spawn_at("mage", origin - toward * 90.0 - perp * 35.0)
 
 func _spawn_at(type: String, pos: Vector2) -> void:
+	const SPAWN_LIMIT := 880.0
+	pos.x = clampf(pos.x, -SPAWN_LIMIT, SPAWN_LIMIT)
+	pos.y = clampf(pos.y, -SPAWN_LIMIT, SPAWN_LIMIT)
 	var enemy = ENEMIES[type].instantiate()
 	enemy.global_position = pos
 	if GameState.de_speed_mult != 1.0:
@@ -415,6 +448,30 @@ func _joueur_au_coffre() -> bool:
 		if coffre.get("player_inside") == true:
 			return true
 	return false
+
+func _peut_spawner() -> bool:
+	var cap = MAX_ENNEMIS[min(current_wave, MAX_ENNEMIS.size() - 1)]
+	return get_tree().get_nodes_in_group("enemy").size() < cap
+
+const AURA_ELITE_SCRIPT = preload("res://scenes/effects/aura_elite.gd")
+
+func _spawn_elite_annonce() -> void:
+	if not player:
+		return
+	var type = ALL_CLASSES[randi() % ALL_CLASSES.size()]
+	var elite_diff = min(5, GameState.niveau_difficulte + 1)
+	var angle = randf() * TAU
+	var pos = player.global_position + Vector2(cos(angle), sin(angle)) * 520.0
+	pos.x = clampf(pos.x, -870.0, 870.0)
+	pos.y = clampf(pos.y, -870.0, 870.0)
+	var enemy = ENEMIES[type].instantiate()
+	# Fixer diff avant add_child : _ready() le lira et n'écrasera pas (if diff == 1 seulement)
+	enemy.diff = elite_diff
+	enemy.global_position = pos
+	get_parent().add_child(enemy)
+	var aura = Node2D.new()
+	aura.set_script(AURA_ELITE_SCRIPT)
+	enemy.add_child(aura)
 
 func afficher_vague():
 	var hud = get_tree().get_first_node_in_group("hud")

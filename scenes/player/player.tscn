@@ -26,6 +26,10 @@ vframes = 4
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1177722356]
 zoom = Vector2(0.75, 0.75)
+limit_left = -900
+limit_right = 900
+limit_top = -900
+limit_bottom = 900
 
 [node name="shadow" type="AnimatedSprite2D" parent="."]
 z_index = -1

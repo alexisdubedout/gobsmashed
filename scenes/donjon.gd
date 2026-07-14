@@ -181,6 +181,10 @@ func _construire_contenu():
 	spacer.custom_minimum_size.y = 6
 	scroll_content.add_child(spacer)
 
+	if OS.is_debug_build():
+		scroll_content.add_child(_creer_separateur())
+		scroll_content.add_child(_creer_btn_debug_tout())
+
 # ── Composants ───────────────────────────────────────────
 
 func _creer_titre_section(texte: String) -> Control:
@@ -425,6 +429,35 @@ func _creer_bouton_jouer() -> Button:
 
 	btn.pressed.connect(_on_jouer)
 	return btn
+
+func _creer_btn_debug_tout() -> Control:
+	var wrapper = MarginContainer.new()
+	wrapper.add_theme_constant_override("margin_left", 10)
+	wrapper.add_theme_constant_override("margin_right", 10)
+	wrapper.add_theme_constant_override("margin_top", 4)
+	wrapper.add_theme_constant_override("margin_bottom", 8)
+	var btn = Button.new()
+	btn.text = "🔧  DEBUG — Tout débloquer"
+	btn.add_theme_font_size_override("font_size", 13)
+	btn.add_theme_color_override("font_color", Color("#ff6644"))
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.pressed.connect(_debug_tout_debloquer)
+	wrapper.add_child(btn)
+	return wrapper
+
+func _debug_tout_debloquer() -> void:
+	for skill in GameState.COUT_SKILLS:
+		GameState.skills_debloques[skill] = true
+	for objet in GameState.objets_base:
+		GameState.objets_base[objet] = true
+	for stat in GameState.stats:
+		GameState.stats[stat] = GameState.MAX_NIVEAU_STAT
+	GameState.niveaux_debloques = 5
+	GameState.or_total  = max(GameState.or_total,  50000)
+	GameState.xp_total  = max(GameState.xp_total,  50000)
+	GameState.sauvegarder()
+	_rafraichir_monnaies()
+	_construire_contenu()
 
 # ── Logique ──────────────────────────────────────────────
 

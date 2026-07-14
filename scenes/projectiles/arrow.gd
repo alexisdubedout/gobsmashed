@@ -1,8 +1,9 @@
 extends Area2D
 
-const SPEED  = 380.0
+const SPEED  = 560.0
 const DAMAGE = 8
 
+var enemy_type_name := "elf"
 var direction := Vector2.ZERO
 var reflechi := false
 var reflechi_mult := 1.0
@@ -34,10 +35,7 @@ func _physics_process(delta: float) -> void:
 	if player and global_position.distance_to(player.global_position) < 12.0:
 		if player.has_method("tenter_bloquer_projectile") and player.tenter_bloquer_projectile(self, direction):
 			return
-		if player.take_damage(DAMAGE):
-			var hud = get_tree().get_first_node_in_group("hud")
-			if hud and hud.has_method("enregistrer_dommage"):
-				hud.enregistrer_dommage("elf", DAMAGE)
-			if poison and player.has_method("appliquer_poison"):
-				player.appliquer_poison(2, 3.0)
+		player.take_damage_from(DAMAGE, self)
+		if poison and player.has_method("appliquer_poison"):
+			player.appliquer_poison(2, 3.0)
 		queue_free()

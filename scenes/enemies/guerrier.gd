@@ -29,6 +29,8 @@ var _attack_anim_timer := 0.0
 var _stuck_timer:     float   = 0.0
 var _pos_check_timer: float   = 0.0
 var _last_check_pos:  Vector2 = Vector2.ZERO
+static var _last_bubble_time: float = -9999.0
+var _pas_bulle: float = 0.0
 
 # Skills niveau difficulté (cumulatifs)
 var diff: int = 1
@@ -91,6 +93,16 @@ func setup():
 	enemy_type_name = "guerrier"
 	body_level      = 1
 
+const MEMES_GUERRIER = [
+	"THIS IS SPARTAAAA !!",
+	"LEEEEROYYYY JENKINSSS !!",
+	"GET OVER HERE !",
+	"IT'S OVER 9000 !!",
+	"DO YOU EVEN LIFT BRO",
+	"we do a little trolling",
+	"UNLIMITED POWER !!!",
+]
+
 func _physics_process(_delta):
 	_attack_anim_timer = max(0.0, _attack_anim_timer - _delta)
 	if rooted:
@@ -148,6 +160,11 @@ func _physics_process(_delta):
 		else:
 			_stuck_timer = 0.0
 
+		_pas_bulle += velocity.length() * _delta
+		if _pas_bulle >= 800.0:
+			_pas_bulle = 0.0
+			_afficher_bulle(MEMES_GUERRIER[randi() % MEMES_GUERRIER.size()])
+
 		var dist = global_position.distance_to(player.global_position)
 		if dist < 35.0:
 			player.take_damage_from(damage, self)
@@ -164,12 +181,14 @@ func _physics_process(_delta):
 		_last_check_pos  = global_position
 		_pos_check_timer = 0.0
 
+const MAP_HALF := 900.0
+
 func _teleporter_pres_joueur() -> void:
 	var angle = randf() * TAU
 	var rayon = randf_range(380.0, 460.0)
 	var tele  = player.global_position + Vector2(cos(angle), sin(angle)) * rayon
-	if tele.length() > 640.0:
-		tele = tele.normalized() * 630.0
+	tele.x = clampf(tele.x, -(MAP_HALF - 10.0), MAP_HALF - 10.0)
+	tele.y = clampf(tele.y, -(MAP_HALF - 10.0), MAP_HALF - 10.0)
 	global_position = tele
 
 func get_direction() -> Vector2:
@@ -177,10 +196,15 @@ func get_direction() -> Vector2:
 	# Si l'ennemi est déjà proche du joueur, il fonce — la limite de map ne bloque pas
 	if global_position.distance_to(player.global_position) < 200.0:
 		return to_player
-	var dist_center = global_position.length()
-	if dist_center > 640.0:
-		var inward = -global_position.normalized()
-		var blend  = clampf((dist_center - 640.0) / 40.0, 0.0, 1.0)
+	var px = absf(global_position.x)
+	var py = absf(global_position.y)
+	var edge_excess = maxf(px - MAP_HALF, py - MAP_HALF)
+	if edge_excess > 0.0:
+		var inward = Vector2.ZERO
+		if px > MAP_HALF: inward.x = -signf(global_position.x)
+		if py > MAP_HALF: inward.y = -signf(global_position.y)
+		if inward != Vector2.ZERO: inward = inward.normalized()
+		var blend = clampf(edge_excess / 40.0, 0.0, 1.0)
 		return to_player.lerp(inward, blend).normalized()
 	return to_player
 
@@ -233,6 +257,137 @@ func _flash_hit():
 	await get_tree().create_timer(0.1).timeout
 	if is_instance_valid(self):
 		$body.modulate = body_color
+
+func _afficher_bulle(texte: String) -> void:
+	var now = Time.get_ticks_msec() / 1000.0
+	if now - _last_bubble_time < randf_range(100.0, 130.0):
+		return
+	if not is_inside_tree():
+		return
+	_last_bubble_time = now
+	_creer_bulle_tete(texte)
+	_creer_bandeau_aw(texte)
+
+func _creer_bulle_tete(texte: String) -> void:
+	if get_node_or_null("BulleDialogue"):
+		return
+	var panel = PanelContainer.new()
+	panel.name = "BulleDialogue"
+	panel.z_index = 10
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(1.0, 1.0, 0.93, 0.93)
+	style.border_color = Color(0.2, 0.2, 0.2, 0.8)
+	style.border_width_left = 1; style.border_width_right = 1
+	style.border_width_top = 1; style.border_width_bottom = 1
+	style.corner_radius_top_left = 5; style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5; style.corner_radius_bottom_right = 5
+	style.content_margin_left = 6; style.content_margin_right = 6
+	style.content_margin_top = 3; style.content_margin_bottom = 3
+	panel.add_theme_stylebox_override("panel", style)
+	var lbl = Label.new()
+	lbl.text = texte
+	lbl.add_theme_font_size_override("font_size", 9)
+	lbl.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+	panel.add_child(lbl)
+	add_child(panel)
+	var w = texte.length() * 5.5 + 14.0
+	panel.position = Vector2(-w * 0.5, -88)
+	var tween = create_tween()
+	tween.tween_interval(2.0)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(panel.queue_free)
+
+func _creer_bandeau_aw(texte: String) -> void:
+	var scene = get_tree().current_scene
+	if not scene:
+		return
+	var old = scene.get_node_or_null("BandeauAW")
+	if old:
+		old.queue_free()
+	var vp = get_viewport().get_visible_rect().size
+
+	var canvas = CanvasLayer.new()
+	canvas.name = "BandeauAW"
+	canvas.layer = 18
+	scene.add_child(canvas)
+
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(vp.x - 4.0, 72.0)
+	var pstyle = StyleBoxFlat.new()
+	pstyle.bg_color = Color(0.07, 0.04, 0.12, 0.93)
+	pstyle.border_color = Color(0.75, 0.6, 0.15)
+	pstyle.border_width_top = 3
+	pstyle.border_width_left = 0; pstyle.border_width_right = 0; pstyle.border_width_bottom = 0
+	pstyle.content_margin_left = 10; pstyle.content_margin_right = 8
+	pstyle.content_margin_top = 6; pstyle.content_margin_bottom = 6
+	panel.add_theme_stylebox_override("panel", pstyle)
+	canvas.add_child(panel)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	panel.add_child(hbox)
+
+	# Zone texte (gauche)
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(vbox)
+
+	var lbl_txt = Label.new()
+	lbl_txt.text = texte
+	lbl_txt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_txt.add_theme_font_size_override("font_size", 13)
+	lbl_txt.add_theme_color_override("font_color", Color(0.96, 0.94, 0.88))
+	lbl_txt.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	lbl_txt.add_theme_constant_override("shadow_offset_x", 1)
+	lbl_txt.add_theme_constant_override("shadow_offset_y", 1)
+	lbl_txt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(lbl_txt)
+
+	# Portrait sprite (droite, style Advance Wars)
+	var pbg = PanelContainer.new()
+	pbg.custom_minimum_size = Vector2(58, 58)
+	pbg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var ec = _get_couleur_ennemi()
+	var pbg_style = StyleBoxFlat.new()
+	pbg_style.bg_color = ec.darkened(0.6)
+	pbg_style.border_color = ec
+	pbg_style.border_width_top = 2; pbg_style.border_width_bottom = 2
+	pbg_style.border_width_left = 2; pbg_style.border_width_right = 2
+	pbg_style.corner_radius_top_left = 4; pbg_style.corner_radius_top_right = 4
+	pbg_style.corner_radius_bottom_left = 4; pbg_style.corner_radius_bottom_right = 4
+	pbg.add_theme_stylebox_override("panel", pbg_style)
+	hbox.add_child(pbg)
+
+	var portrait = TextureRect.new()
+	portrait.custom_minimum_size = Vector2(54, 54)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var body_node = get_node_or_null("body") as AnimatedSprite2D
+	if body_node and body_node.sprite_frames:
+		for anim_try in ["idle_down", "run_down", "idle_up", "run_up"]:
+			if body_node.sprite_frames.has_animation(anim_try) and \
+					body_node.sprite_frames.get_frame_count(anim_try) > 0:
+				portrait.texture = body_node.sprite_frames.get_frame_texture(anim_try, 0)
+				break
+	pbg.add_child(portrait)
+
+	panel.position = Vector2(2.0, vp.y + 20.0)
+	var tween = canvas.create_tween()
+	tween.tween_property(panel, "position:y", vp.y - 96.0, 0.35).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_interval(7.0)
+	tween.tween_property(panel, "scale", Vector2(0.12, 0.12), 0.45).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(panel, "position", Vector2(vp.x - 22.0, vp.y - 12.0), 0.45).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_callback(canvas.queue_free)
+
+func _get_couleur_ennemi() -> Color:
+	match enemy_type_name:
+		"guerrier": return Color("#cc6633")
+		"elf":      return Color("#44bb66")
+		"paladin":  return Color("#4466dd")
+		"mage":     return Color("#aa33cc")
+	return Color("#888888")
 
 func die():
 	# Niv 5 — frénésie : se divise en 2 mini-guerriers

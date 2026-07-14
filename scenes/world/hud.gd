@@ -56,11 +56,11 @@ func _creer_bourse_label() -> void:
 func _creer_coffre_indicator() -> void:
 	_coffre_bg = ColorRect.new()
 	_coffre_bg.color = Color(0, 0, 0, 0.55)
-	_coffre_bg.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_coffre_bg.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_coffre_bg.offset_left   = -90
 	_coffre_bg.offset_right  = 90
-	_coffre_bg.offset_top    = 14
-	_coffre_bg.offset_bottom = 38
+	_coffre_bg.offset_top    = -52
+	_coffre_bg.offset_bottom = -28
 	_coffre_bg.mouse_filter  = Control.MOUSE_FILTER_IGNORE
 	_coffre_bg.visible = false
 	add_child(_coffre_bg)
@@ -74,11 +74,11 @@ func _creer_coffre_indicator() -> void:
 	_coffre_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
 	_coffre_label.add_theme_constant_override("shadow_offset_x", 2)
 	_coffre_label.add_theme_constant_override("shadow_offset_y", 2)
-	_coffre_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_coffre_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_coffre_label.offset_left   = -90
 	_coffre_label.offset_right  = 90
-	_coffre_label.offset_top    = 14
-	_coffre_label.offset_bottom = 38
+	_coffre_label.offset_top    = -52
+	_coffre_label.offset_bottom = -28
 	_coffre_label.visible = false
 	add_child(_coffre_label)
 
@@ -183,9 +183,14 @@ func _process(delta):
 		if _level_label:
 			var lv = player.level
 			var max_lv = (player.MAX_LEVEL - 1)
-			_level_label.text = "Niv. %d / %d" % [lv, max_lv]
-			_level_label.add_theme_color_override("font_color",
-				Color("#e8c84b") if lv >= max_lv else Color("#aaaaaa"))
+			if lv >= player.MAX_LEVEL:
+				_level_label.text = "Niv. MAX"
+				_level_label.add_theme_color_override("font_color", Color("#e8c84b"))
+				$VBoxContainer/HBoxContainer2/BarreXP.value = $VBoxContainer/HBoxContainer2/BarreXP.max_value
+			else:
+				_level_label.text = "Niv. %d / %d" % [lv, max_lv]
+				_level_label.add_theme_color_override("font_color",
+					Color("#e8c84b") if lv >= max_lv else Color("#aaaaaa"))
 
 func _update_bourse(player) -> void:
 	if not _bourse_label:
@@ -344,14 +349,15 @@ func lancer_de() -> int:
 	var lbl_desc := Label.new()
 	lbl_desc.text = effet.get("desc", "")
 	lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_desc.add_theme_font_size_override("font_size", 14)
 	lbl_desc.add_theme_color_override("font_color", Color("#dddddd"))
 	lbl_desc.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
 	lbl_desc.add_theme_constant_override("shadow_offset_x", 1)
 	lbl_desc.add_theme_constant_override("shadow_offset_y", 1)
 	lbl_desc.set_anchors_preset(Control.PRESET_CENTER)
-	lbl_desc.offset_left = -220; lbl_desc.offset_right = 220
-	lbl_desc.offset_top = 110; lbl_desc.offset_bottom = 140
+	lbl_desc.offset_left = -190; lbl_desc.offset_right = 190
+	lbl_desc.offset_top = 110; lbl_desc.offset_bottom = 168
 	overlay.add_child(lbl_desc)
 
 	await get_tree().create_timer(2.8).timeout

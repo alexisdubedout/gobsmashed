@@ -17,6 +17,16 @@ var _arrow_visible: bool       = false
 var _arrow_t:       float      = 0.0
 var _arrow_dir:     Vector2    = Vector2.RIGHT
 
+const MEMES_PALADIN = [
+	"FOR THE HORDE !",
+	"Witness meeee !",
+	"You shall not pass !",
+	"THIS ISN'T EVEN MY FINAL FORM",
+	"PLUS ULTRA !!!",
+	"I am inevitable",
+	"MAXIMUM OVERDRIVE",
+]
+
 func setup():
 	max_hp          = 130
 	current_hp      = 130
@@ -74,6 +84,8 @@ func _physics_process(_delta):
 				$body.modulate = body_color
 				state_timer    = 0.0
 				state          = State.CHARGE
+				if randf() < 0.08:
+					_afficher_bulle(MEMES_PALADIN[randi() % MEMES_PALADIN.size()])
 				if player:
 					charge_direction = (player.global_position - global_position).normalized()
 					var d: Vector2 = charge_direction
@@ -89,10 +101,12 @@ func _physics_process(_delta):
 			if player and global_position.distance_to(player.global_position) < 35.0:
 				player.take_damage_from(damage * 2, self)
 			# Arrêt anticipé si le paladin percute la limite de la map
-			var hit_boundary = global_position.length() > 660.0
+			var px = absf(global_position.x); var py = absf(global_position.y)
+			var hit_boundary = maxf(px, py) > 910.0
 			if hit_boundary or state_timer >= CHARGE_DURATION:
 				if hit_boundary:
-					global_position = global_position.normalized() * 650.0
+					global_position.x = clampf(global_position.x, -900.0, 900.0)
+					global_position.y = clampf(global_position.y, -900.0, 900.0)
 				state_timer    = 0.0
 				state          = State.COOLDOWN
 				$body.modulate = body_color

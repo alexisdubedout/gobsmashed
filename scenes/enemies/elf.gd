@@ -25,10 +25,19 @@ func setup() -> void:
 	enemy_type_name = "elf"
 	body_level      = 1
 
+const MEMES_ELF = [
+	"HEADSHOT",
+	"420 no scope gg",
+	"never gonna give you up~",
+	"skill issue lol",
+	"arrow to the knee...",
+	"kite kite kite",
+	"ez clap",
+]
+
 func _activer_competences() -> void:
-	# Niv 5 — traque : réduit la distance de retraite pour rester en pression
 	if diff >= 5:
-		pass  # géré inline dans _physics_process via diff check
+		pass
 
 func _physics_process(delta: float) -> void:
 	if not player:
@@ -120,6 +129,8 @@ func _fire_arrow() -> void:
 		return
 	_face_toward_player()
 	_attack_anim_timer = 0.5
+	if randf() < 0.008:
+		_afficher_bulle(MEMES_ELF[randi() % MEMES_ELF.size()])
 	var dir: Vector2 = (player.global_position - global_position).normalized()
 
 	# Niv 4 — salve : 5 flèches en éventail

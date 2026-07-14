@@ -1,36 +1,73 @@
 class_name Augments
 
 static var stacks: Dictionary = {}
+static var ultimates_debloquees: Array = []
+
+const ARCHETYPES = {
+	"berserker":    {"couleur": Color("#cc2222"), "label": "BERSERKER"},
+	"empoisonneur": {"couleur": Color("#22aa44"), "label": "EMPOISONNEUR"},
+	"forteresse":   {"couleur": Color("#2255cc"), "label": "FORTERESSE"},
+	"légion":       {"couleur": Color("#ccaa11"), "label": "LÉGION"},
+	"pillard":      {"couleur": Color("#cc6611"), "label": "PILLARD"},
+}
+
+const ULTIMATES = [
+	{
+		"nom": "Dévastation",    "icone": "💀",
+		"desc": "Crit 50%, toutes les pièces traversent, rebondissent et explosent.",
+		"requires": ["Multi-shot", "Rage gobeline", "Frappe critique", "Pièces explosives"]
+	},
+	{
+		"nom": "Zone toxique",   "icone": "☣️",
+		"desc": "Flaques 4× plus longues et géantes, aura +50% rayon, épines ×2.",
+		"requires": ["Flaque de poison", "Aura menaçante", "Épines", "Pièces empoisonnées"]
+	},
+	{
+		"nom": "Forteresse",     "icone": "🏰",
+		"desc": "Regen toutes les 2s. Invincible 2s toutes les 12s. Drain vital ×3.",
+		"requires": ["Fortification", "Bouclier forgé", "Régénération", "Drain vital"]
+	},
+	{
+		"nom": "Horde gobeline", "icone": "👹",
+		"desc": "+2 alliés permanents. Avarice soigne 2×. Frénésie dure 2× plus longtemps.",
+		"requires": ["Collègue gobelin", "Alliés fervents", "Gobelin frénétique", "Avarice"]
+	},
+	{
+		"nom": "Pillard",        "icone": "💎",
+		"desc": "Bourse max 150. Chaque kill rembourse 1 pièce.",
+		"requires": ["Dash éclair", "Grande bourse", "Filon d'or", "Pièces lourdes"]
+	},
+]
 
 const LISTE = [
-	{"nom": "Multi-shot",        "desc": "Tire 2 pièces à la fois",              "type": "attaque",  "icone": "🪙"},
-	{"nom": "Attack speed",      "desc": "Tire plus vite",                        "type": "attaque",  "icone": "⚡"},
-	{"nom": "Collègue gobelin",  "desc": "+1 allié qui vous suit",               "type": "renfort",  "icone": "👺"},
-	{"nom": "Flaque de poison",  "desc": "Laisse une flaque au sol",             "type": "zone",     "icone": "☠️"},
-	{"nom": "Pièces lourdes",    "desc": "Les ennemis ralentissent",             "type": "slow",     "icone": "💰"},
-	{"nom": "Avarice",           "desc": "Chaque kill redonne des PV",           "type": "soin",     "icone": "💛"},
-	{"nom": "Rage gobeline",     "desc": "Les pièces font plus de dégâts",       "type": "attaque",  "icone": "🔥"},
-	{"nom": "Dash éclair",       "desc": "Améliore le dash",                     "type": "mobilité", "icone": "💨"},
-	{"nom": "Bouclier forgé",    "desc": "Réduit la recharge du bouclier",       "type": "défense",  "icone": "🛡️", "requires": "bouclier"},
-	{"nom": "Renvoi magique",    "desc": "Le renvoi inflige plus de dégâts",     "type": "défense",  "icone": "✨", "requires": "bouclier_magique"},
-	{"nom": "Drain vital",       "desc": "Chaque pièce qui touche redonne des PV","type": "soin",    "icone": "🩸"},
-	{"nom": "Fortification",     "desc": "Réduit les dégâts reçus",              "type": "défense",  "icone": "🪨"},
-	{"nom": "Pièces explosives", "desc": "Les pièces explosent à l'impact",      "type": "attaque",  "icone": "🧨"},
-	{"nom": "Grande bourse",     "desc": "Augmente la capacité de la bourse",    "type": "bourse",   "icone": "👜"},
-	{"nom": "Filon d'or",        "desc": "Le coffre recharge la bourse plus vite","type": "bourse",  "icone": "⛏️"},
-	# Nouveaux skills
-	{"nom": "Régénération",       "desc": "Regagne des PV passivement",                           "type": "soin",     "icone": "💚"},
-	{"nom": "Aura menaçante",     "desc": "Inflige des dégâts aux ennemis proches chaque seconde","type": "zone",     "icone": "🌀"},
-	{"nom": "Frappe critique",    "desc": "Chance de doubler les dégâts d'une pièce",            "type": "attaque",  "icone": "💥"},
-	{"nom": "Ruée offensive",     "desc": "Le dash blesse les ennemis traversés",                 "type": "mobilité", "icone": "⚔️"},
-	{"nom": "Épines",             "desc": "Renvoie des dégâts aux ennemis qui frappent",         "type": "défense",  "icone": "🌵"},
-	{"nom": "Alliés fervents",    "desc": "Les alliés tirent plus vite et plus fort",            "type": "renfort",  "icone": "🏹"},
-	{"nom": "Gobelin frénétique", "desc": "Chaque kill booste la vitesse de déplacement",        "type": "mobilité", "icone": "🐾"},
-	{"nom": "Pièces empoisonnées","desc": "Les pièces appliquent un poison sur les ennemis",     "type": "attaque",  "icone": "🐍"},
+	{"nom": "Multi-shot",        "arch": "berserker",    "desc": "Tire 2 pièces à la fois",              "type": "attaque",  "icone": "🪙"},
+	{"nom": "Attack speed",      "arch": "berserker",    "desc": "Tire plus vite",                        "type": "attaque",  "icone": "⚡"},
+	{"nom": "Collègue gobelin",  "arch": "légion",       "desc": "+1 allié qui vous suit",               "type": "renfort",  "icone": "👺"},
+	{"nom": "Flaque de poison",  "arch": "empoisonneur", "desc": "Laisse une flaque au sol",             "type": "zone",     "icone": "☠️"},
+	{"nom": "Pièces lourdes",    "arch": "pillard",      "desc": "Les ennemis ralentissent",             "type": "slow",     "icone": "💰"},
+	{"nom": "Avarice",           "arch": "légion",       "desc": "Chaque kill redonne des PV",           "type": "soin",     "icone": "💛"},
+	{"nom": "Rage gobeline",     "arch": "berserker",    "desc": "Les pièces font plus de dégâts",       "type": "attaque",  "icone": "🔥"},
+	{"nom": "Dash éclair",       "arch": "pillard",      "desc": "Améliore le dash",                     "type": "mobilité", "icone": "💨"},
+	{"nom": "Bouclier forgé",    "arch": "forteresse",   "desc": "Réduit la recharge du bouclier",       "type": "défense",  "icone": "🛡️", "requires": "bouclier"},
+	{"nom": "Renvoi magique",    "arch": "empoisonneur", "desc": "Le renvoi inflige plus de dégâts",     "type": "défense",  "icone": "✨", "requires": "bouclier_magique"},
+	{"nom": "Drain vital",       "arch": "forteresse",   "desc": "Chaque pièce qui touche redonne des PV","type": "soin",    "icone": "🩸"},
+	{"nom": "Fortification",     "arch": "forteresse",   "desc": "Réduit les dégâts reçus",              "type": "défense",  "icone": "🪨"},
+	{"nom": "Pièces explosives", "arch": "berserker",    "desc": "Les pièces explosent à l'impact",      "type": "attaque",  "icone": "🧨"},
+	{"nom": "Grande bourse",     "arch": "pillard",      "desc": "Augmente la capacité de la bourse",    "type": "bourse",   "icone": "👜"},
+	{"nom": "Filon d'or",        "arch": "pillard",      "desc": "Le coffre recharge la bourse plus vite","type": "bourse",  "icone": "⛏️"},
+	{"nom": "Régénération",      "arch": "forteresse",   "desc": "Regagne des PV passivement",                           "type": "soin",     "icone": "💚"},
+	{"nom": "Aura menaçante",    "arch": "empoisonneur", "desc": "Inflige des dégâts aux ennemis proches chaque seconde","type": "zone",     "icone": "🌀"},
+	{"nom": "Frappe critique",   "arch": "berserker",    "desc": "Chance de doubler les dégâts d'une pièce",            "type": "attaque",  "icone": "💥"},
+	{"nom": "Ruée offensive",    "arch": "légion",       "desc": "Le dash blesse les ennemis traversés",                 "type": "mobilité", "icone": "⚔️"},
+	{"nom": "Épines",            "arch": "empoisonneur", "desc": "Renvoie des dégâts aux ennemis qui frappent",         "type": "défense",  "icone": "🌵"},
+	{"nom": "Alliés fervents",   "arch": "légion",       "desc": "Les alliés tirent plus vite et plus fort",            "type": "renfort",  "icone": "🏹"},
+	{"nom": "Gobelin frénétique","arch": "légion",       "desc": "Chaque kill booste la vitesse de déplacement",        "type": "mobilité", "icone": "🐾"},
+	{"nom": "Pièces empoisonnées","arch": "empoisonneur","desc": "Les pièces appliquent un poison sur les ennemis",     "type": "attaque",  "icone": "🐍"},
 ]
 
 static func reset() -> void:
 	stacks.clear()
+	ultimates_debloquees.clear()
 
 static func is_maxed(nom: String) -> bool:
 	return stacks.get(nom, 0) >= 3
@@ -133,9 +170,9 @@ static func get_desc(augment: Dictionary) -> String:
 				2: return "+3 PV toutes les 4 secondes + 15 PV immédiats (MAX)"
 		"Aura menaçante":
 			match stack:
-				0: return "3 dégâts/s aux ennemis dans un rayon de 60px"
-				1: return "5 dégâts/s, rayon 80px"
-				2: return "7 dégâts/s, rayon 100px + ralentit les ennemis (MAX)"
+				0: return "9 dégâts/s aux ennemis dans un rayon de 110px"
+				1: return "16 dégâts/s, rayon 160px"
+				2: return "25 dégâts/s, rayon 220px + ralentit les ennemis (MAX)"
 		"Frappe critique":
 			match stack:
 				0: return "15% de chance de doubler les dégâts"
@@ -245,3 +282,35 @@ static func appliquer(augment: Dictionary, player) -> void:
 			player.gobelin_frenetic = stack
 		"Pièces empoisonnées":
 			player.pieces_empoisonnees = stack
+	verifier_ultimates(player)
+
+static func verifier_ultimates(player) -> void:
+	for ult in ULTIMATES:
+		if ult["nom"] in ultimates_debloquees:
+			continue
+		var all_maxed = true
+		for req in ult["requires"]:
+			if stacks.get(req, 0) < 3:
+				all_maxed = false
+				break
+		if all_maxed:
+			ultimates_debloquees.append(ult["nom"])
+			_appliquer_ultime(ult["nom"], player)
+
+static func _appliquer_ultime(nom: String, player) -> void:
+	match nom:
+		"Dévastation":
+			player.crit_chance = 0.50
+			player.ultime_devastation = true
+		"Zone toxique":
+			player.ultime_zone_toxique = true
+		"Forteresse":
+			player.ultime_forteresse = true
+		"Horde gobeline":
+			player.ultime_horde = true
+			player.ajouter_collegue()
+			player.ajouter_collegue()
+		"Pillard":
+			player.ultime_pillard = true
+			player.bourse_max = 150
+	player._notifier_ultime(nom)

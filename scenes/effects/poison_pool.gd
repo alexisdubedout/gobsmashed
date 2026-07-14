@@ -1,6 +1,7 @@
-extends Area2D
+﻿extends Area2D
 
-const DURATION = 5.0
+var duration: float = 5.0
+var ultime_actif: bool = false
 var niveau = 1
 var timer = 0.0
 var tick_timer = 0.0
@@ -10,8 +11,14 @@ var anim_frame = 0
 var slowed_by_me: Array = []
 
 func _ready():
-	var scale_factor = 1.0 + (niveau - 1) * 0.5
-	scale = Vector2(scale_factor, scale_factor)
+	z_index = 0
+	add_to_group("poison_pool")
+	if ultime_actif:
+		duration = 20.0
+		scale = Vector2(1.8, 1.8) * (1.0 + (niveau - 1) * 0.5)
+	else:
+		var scale_factor = 1.0 + (niveau - 1) * 0.5
+		scale = Vector2(scale_factor, scale_factor)
 
 func _process(delta):
 	timer += delta
@@ -23,7 +30,7 @@ func _process(delta):
 		anim_frame = (anim_frame + 1) % 9
 		$Sprite2D.frame = anim_frame
 
-	if timer >= DURATION:
+	if timer >= duration:
 		for enemy in slowed_by_me:
 			if is_instance_valid(enemy): enemy.slowed = false
 		queue_free()
@@ -51,3 +58,4 @@ func _process(delta):
 				if not is_instance_valid(enemy) or not enemy in enemies_in_range:
 					if is_instance_valid(enemy): enemy.slowed = false
 					slowed_by_me.erase(enemy)
+

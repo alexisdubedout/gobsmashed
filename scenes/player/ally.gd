@@ -3,6 +3,8 @@
 const SPEED = 120.0
 const ATTACK_DELAY = 1.2
 const COIN_SCENE = preload("res://scenes/projectiles/coin.tscn")
+const MAP_HALF   = 895.0
+const TELEPORT_DIST = 500.0
 
 var attack_timer = 0.0
 var player
@@ -11,16 +13,27 @@ func _ready():
 	player = get_tree().get_first_node_in_group("player")
 
 func _physics_process(_delta):
-	if not player:
+	if not is_instance_valid(player):
+		player = get_tree().get_first_node_in_group("player")
 		return
 
 	var dist_player = global_position.distance_to(player.global_position)
+
+	# Téléportation de secours si trop loin
+	if dist_player > TELEPORT_DIST:
+		var angle = randf() * TAU
+		global_position = player.global_position + Vector2(cos(angle), sin(angle)) * 60.0
+
 	if dist_player > 80:
 		var direction = (player.global_position - global_position).normalized()
 		velocity = direction * SPEED
 	else:
 		velocity = Vector2.ZERO
 	move_and_slide()
+
+	# Reste dans les limites de la carte
+	global_position.x = clampf(global_position.x, -MAP_HALF, MAP_HALF)
+	global_position.y = clampf(global_position.y, -MAP_HALF, MAP_HALF)
 
 	attack_timer += _delta
 	var af = player.allies_fervents

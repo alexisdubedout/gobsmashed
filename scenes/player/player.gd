@@ -6,7 +6,8 @@ const POISON_SCENE = preload("res://scenes/effects/poison_pool.tscn")
 const TRAP_SCENE = preload("res://scenes/effects/trap.tscn")
 const ALLY_SCENE = preload("res://scenes/player/ally.tscn")
 
-const SPEED = 200.0
+const SPEED    = 200.0
+const MAP_HALF = 900.0
 
 var bourse:     int = 18
 var bourse_max: int = 25
@@ -95,6 +96,15 @@ var _frenetic_streak: int   = 0
 var _ruee_hit: Array = []
 
 var _aura_visuelle = null
+
+# Ultimates
+var ultime_devastation: bool = false
+var ultime_zone_toxique: bool = false
+var ultime_forteresse:   bool = false
+var ultime_horde:        bool = false
+var ultime_pillard:      bool = false
+var _forteresse_timer:   float = 0.0
+var _flaque_reactive_cd: float = 0.0
 
 var _knockback_vel:   Vector2 = Vector2.ZERO
 var _shake_timer:     float   = 0.0
@@ -196,6 +206,12 @@ func _physics_process(_delta):
 
 	dash_cd = max(dash_cd - _delta, 0.0)
 	bouclier_cd = max(bouclier_cd - _delta, 0.0)
+	_flaque_reactive_cd = max(0.0, _flaque_reactive_cd - _delta)
+	if ultime_forteresse:
+		_forteresse_timer += _delta
+		if _forteresse_timer >= 12.0:
+			_forteresse_timer = 0.0
+			_invincible_bref(2.0)
 
 	# Déplacement
 	var direction = Vector2.ZERO
@@ -280,11 +296,14 @@ func _physics_process(_delta):
 	else:
 		$Camera2D.offset = Vector2.ZERO
 	move_and_slide()
+	global_position.x = clampf(global_position.x, -MAP_HALF, MAP_HALF)
+	global_position.y = clampf(global_position.y, -MAP_HALF, MAP_HALF)
 
 	# Régénération passive
 	if regen_niveau > 0:
 		regen_timer += _delta
-		if regen_timer >= 4.0:
+		var regen_interval = 2.0 if ultime_forteresse else 4.0
+		if regen_timer >= regen_interval:
 			regen_timer = 0.0
 			current_hp = min(max_hp, current_hp + regen_niveau)
 
@@ -422,14 +441,15 @@ func take_damage_from(amount: int, source) -> void:
 		hud.enregistrer_dommage(type_src, dmg_final)
 	# Épines — renvoie des dégâts à la source
 	if epines_niveau > 0 and source.has_method("take_damage"):
-		var thorn = [5, 10, 15][epines_niveau - 1]
+		var thorn = [5, 10, 15][epines_niveau - 1] * (2 if ultime_zone_toxique else 1)
 		source.take_damage(thorn)
 		if epines_niveau >= 3:
 			source.set("slowed", true)
 			get_tree().create_timer(1.5).timeout.connect(func():
 				if is_instance_valid(source): source.set("slowed", false))
 	# Flaque de poison réactive (stack 2) — quand le joueur est touché
-	if poison_on_kill and poison_niveau >= 2:
+	if poison_on_kill and poison_niveau >= 2 and _flaque_reactive_cd <= 0.0:
+		_flaque_reactive_cd = 4.0
 		poser_flaque()
 	_on_hit(source.global_position)
 	if current_hp <= 0:
@@ -478,10 +498,15 @@ func appliquer_poison(dmg_per_sec: int, duree: float) -> void:
 const MAX_LEVEL := 16  # 15 level-ups possible par run
 
 func gagner_xp(montant):
+	if level >= MAX_LEVEL:
+		return
 	xp += int(montant * GameState.de_xp_mult)
 	if avarice_niveau > 0:
 		var soin_vals = [2, 3, 5]
-		current_hp = min(max_hp, current_hp + soin_vals[avarice_niveau - 1])
+		var soin = soin_vals[avarice_niveau - 1] * (2 if ultime_horde else 1)
+		current_hp = min(max_hp, current_hp + soin)
+	if ultime_pillard:
+		bourse = min(bourse + 1, bourse_max)
 	if gobelin_frenetic > 0:
 		_activer_frenetic()
 	if xp >= xp_next_level:
@@ -505,6 +530,9 @@ func level_up():
 func die():
 	GameState.ajouter_mort()
 	Augments.reset()
+	var bandeau = get_tree().current_scene.get_node_or_null("BandeauAW")
+	if bandeau:
+		bandeau.queue_free()
 	var hud = get_tree().get_first_node_in_group("hud")
 	var vague = 1
 	var spawner = get_tree().get_first_node_in_group("spawner")
@@ -532,10 +560,14 @@ func activer_trappe():
 	trappe_active = true
 
 func poser_flaque():
+	if get_tree().get_nodes_in_group("poison_pool").size() >= 3:
+		return
 	var pool = POISON_SCENE.instantiate()
 	pool.global_position = global_position
 	pool.niveau = poison_niveau
-	get_tree().current_scene.add_child(pool)
+	if ultime_zone_toxique:
+		pool.ultime_actif = true
+	get_parent().add_child(pool)
 
 func poser_trappe():
 	var trap = TRAP_SCENE.instantiate()
@@ -543,13 +575,14 @@ func poser_trappe():
 	get_tree().current_scene.add_child(trap)
 
 func _appliquer_aura() -> void:
-	var rayons = [60.0, 80.0, 100.0]
-	var dmgs   = [3, 5, 7]
+	var rayons = [165.0, 240.0, 330.0] if ultime_zone_toxique else [110.0, 160.0, 220.0]
+	var dmgs   = [9, 16, 25]
 	var rayon  = rayons[aura_niveau - 1]
 	var dmg    = dmgs[aura_niveau - 1]
 	for enemy in get_tree().get_nodes_in_group("enemy"):
 		if global_position.distance_to(enemy.global_position) < rayon:
 			enemy.take_damage(dmg)
+			_texte_flottant_aura(str(dmg), enemy.global_position)
 			if aura_niveau >= 3:
 				enemy.set("slowed", true)
 				get_tree().create_timer(1.2).timeout.connect(func():
@@ -557,13 +590,42 @@ func _appliquer_aura() -> void:
 	if _aura_visuelle:
 		_aura_visuelle.pulse()
 
+func _texte_flottant_aura(texte: String, pos: Vector2) -> void:
+	var lbl = Label.new()
+	lbl.text = texte
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color("#ff3333"))
+	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	lbl.add_theme_constant_override("shadow_offset_x", 2)
+	lbl.add_theme_constant_override("shadow_offset_y", 2)
+	lbl.position = pos + Vector2(randf_range(-16, 16), -28)
+	get_tree().current_scene.add_child(lbl)
+	var tw = lbl.create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y - 40, 0.7).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.7).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(lbl.queue_free)
+
 func _activer_frenetic() -> void:
 	var durees = [2.0, 3.0, 4.0]
-	_frenetic_timer = durees[gobelin_frenetic - 1]
+	_frenetic_timer = durees[gobelin_frenetic - 1] * (2.0 if ultime_horde else 1.0)
 	_frenetic_actif = true
 	if gobelin_frenetic >= 3:
 		_frenetic_streak += 1
 		if _frenetic_streak >= 3:
 			_frenetic_streak = 0
 			dash_cd = 0.0
-	
+
+func _notifier_ultime(nom: String) -> void:
+	var lbl = Label.new()
+	lbl.text = "⚡ ULTIME DÉBLOQUÉ : %s ⚡" % nom
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color("#FFD700"))
+	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	lbl.add_theme_constant_override("shadow_offset_x", 2)
+	lbl.add_theme_constant_override("shadow_offset_y", 2)
+	lbl.position = Vector2(-140, -130)
+	add_child(lbl)
+	var tw = lbl.create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y - 70, 3.0).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 3.0).set_trans(Tween.TRANS_QUAD).set_delay(1.8)
+	tw.tween_callback(lbl.queue_free)

@@ -2,6 +2,8 @@ extends Area2D
 
 const SPEED = 270.0
 const DAMAGE = 12
+
+var enemy_type_name := "mage"
 var direction = Vector2.ZERO
 var reflechi := false
 var reflechi_mult := 1.0
@@ -36,8 +38,5 @@ func _physics_process(_delta):
 		if dist < 25.0:
 			if player.has_method("tenter_bloquer_projectile") and player.tenter_bloquer_projectile(self, direction):
 				return
-			if player.take_damage(DAMAGE):
-				var hud = get_tree().get_first_node_in_group("hud")
-				if hud and hud.has_method("enregistrer_dommage"):
-					hud.enregistrer_dommage("mage", DAMAGE)
-				queue_free()
+			player.take_damage_from(DAMAGE, self)
+			queue_free()

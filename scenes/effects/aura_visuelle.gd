@@ -1,12 +1,11 @@
 extends Node2D
 
-const RAYONS = [60.0, 80.0, 100.0]
+const RAYONS = [110.0, 160.0, 220.0]
 
 var _light:   PointLight2D
 var _pulse_t: float = 0.0
 
 func _ready() -> void:
-	z_index = -1
 	_light               = PointLight2D.new()
 	_light.texture       = _creer_tex(128)
 	_light.texture_scale = 1.8
@@ -26,26 +25,22 @@ func pulse() -> void:
 
 func _process(delta: float) -> void:
 	var niveau  = _aura_niveau()
-	var ambient = 0.07 if niveau > 0 else 0.0
+	var ambient = 0.18 if niveau > 0 else 0.0
 	if _pulse_t > 0.0:
 		_pulse_t = max(0.0, _pulse_t - delta * 1.8)
-		_light.energy = ambient + _pulse_t * 0.42
-		queue_redraw()
-	elif abs(_light.energy - ambient) > 0.005:
-		_light.energy = lerp(_light.energy, ambient, delta * 4.0)
+	_light.energy = lerp(_light.energy, ambient + _pulse_t * 0.42, delta * 6.0)
+	queue_redraw()
 
 func _draw() -> void:
 	var niveau = _aura_niveau()
 	if niveau <= 0:
 		return
 	var rayon = RAYONS[niveau - 1]
-	# Anneau de bord — toujours visible en ambient
-	var alpha_ring = 0.09 + _pulse_t * 0.28
-	var width_ring = 1.2  + _pulse_t * 2.8
-	draw_arc(Vector2.ZERO, rayon, 0.0, TAU, 72, Color(0.85, 0.08, 0.08, alpha_ring), width_ring)
-	# Remplissage léger seulement pendant le pulse
-	if _pulse_t > 0.15:
-		draw_circle(Vector2.ZERO, rayon, Color(0.55, 0.03, 0.03, _pulse_t * 0.045))
+	var alpha_ring = 0.28 + _pulse_t * 0.35
+	var width_ring = 2.0  + _pulse_t * 3.0
+	draw_arc(Vector2.ZERO, rayon, 0.0, TAU, 72, Color(0.9, 0.08, 0.08, alpha_ring), width_ring)
+	if _pulse_t > 0.05:
+		draw_circle(Vector2.ZERO, rayon, Color(0.6, 0.03, 0.03, _pulse_t * 0.07))
 
 func _aura_niveau() -> int:
 	var p = get_parent()
